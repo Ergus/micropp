@@ -30,39 +30,6 @@ The relation between the assembly time and the solving time can be below than 1%
 
 ![alt text](pics/solver_vs_assembly_2d.png "Solver and Assembly time as a function of the problem size")
 
-# Compile
-
-## Library and test examples
-Requirements : `boost` (for some examples only), `g++` and `make`.
-
-Debug version
-
-```bash
-make <test_1...8>
-```
-
-Optimized version
-
-```bash
-make <test_1...8> OPT=1
-```
-
-## Library only
-
-Requirements : `g++` and `make`.
-
-Debug version
-
-```bash
-make lib
-```
-
-Optimized version
-
-```bash
-make lib OPT=1
-```
-
 Build steps with CMake:
 -----------------------
 
