@@ -103,7 +103,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 
 	const int ns[3] = { nx, ny, nz };
 
-	ell_init_cols(&ell_cols, dim, dim, ns);
+	// This needs to be released manually!!
+	ell_cols = ell_init_cols(dim, dim, ns);
 
 	calc_ctan_lin();
 
