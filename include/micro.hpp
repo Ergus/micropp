@@ -78,17 +78,17 @@ class micropp {
 		// Other variables
 		bool output_files_header;
 
-		double micro_params[5];
+
 		int numMaterials;
-		material_t material_list[MAX_MATS];
+		material_t *material_list;
 		double ctan_lin[nvoi * nvoi];
 
 		ell_matrix A;
 
-		double *b;
-		double *du;
-		double *u;
-		double *u_aux;
+		// double *b;
+		// double *du;
+		// double *u_aux;
+		// double *u;
 
 		int *elem_type;
 		double *elem_stress;
@@ -106,6 +106,9 @@ class micropp {
 		                          { +CONSTXG, -CONSTXG, +CONSTXG },
 		                          { +CONSTXG, +CONSTXG, +CONSTXG },
 		                          { -CONSTXG, +CONSTXG, +CONSTXG } };
+
+		//  Nanos stuff
+		
 
 	protected:
 		// Common
@@ -133,48 +136,46 @@ class micropp {
 		void calc_ave_stress(const double *u, double stress_ave[nvoi]) const;
 		void calc_ave_strain(const double *u, double strain_ave[nvoi]) const;
 
-		void calc_fields();
+		void calc_fields(double *u);
 
-		int newton_raphson(const double strain[nvoi], double *u, double *_err);
+		int newton_raphson(const double strain[nvoi], double *u, double *b,
+		                   double *du, double *_err);
 
 		// Specialized
 		template <typename... Rest>
 		void get_elem_mat(const double *u, double Ae[npe * dim * npe * dim],
-				int ex, int ey, Rest...) const;
+		                  int ex, int ey, Rest...) const;
 
 		void set_displ_bc(const double strain[nvoi], double *u);
 
-		double assembly_rhs(const double *u);
+		double assembly_rhs(const double *u, double *b) const;
 		void assembly_mat(const double *u);
 
 		void calc_bmat(int gp, double bmat[nvoi][npe * dim]) const;
 
 		bool calc_vars_new(const double *u);
 
-		void write_vtu(int tstep, int gp_id);
+		void write_vtu(double *u, int tstep, int gp_id);
 
 		// Functions Only for 3D
 
-		void plastic_get_stress(
-			const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double stress[6]) const;
+		void plastic_get_stress(const material_t *material, const double eps[6],
+		                        const double eps_p_old[6], double alpha_old,
+		                        double stress[6]) const;
 
 		void get_dev_tensor(const double tensor[6], double tensor_dev[6]) const;
 
-		bool plastic_law(
-			const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double *_dl, double _normal[6], double _s_trial[6]) const;
+		bool plastic_law(const material_t *material, const double eps[6],
+		                 const double eps_p_old[6], double alpha_old,
+		                 double *_dl, double _normal[6], double _s_trial[6]) const;
 
-		void plastic_get_ctan(
-			const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double ctan[6][6]) const;
+		void plastic_get_ctan(const material_t *material, const double eps[6],
+		                      const double eps_p_old[6], double alpha_old,
+		                      double ctan[6][6]) const;
 
 		bool plastic_evolute(const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double eps_p_new[6], double *alpha_new) const;
+		                     const double eps_p_old[6], double alpha_old,
+		                     double eps_p_new[6], double *alpha_new) const;
 
 		void isolin_get_ctan(const material_t *material, double ctan[6][6]) const;
 

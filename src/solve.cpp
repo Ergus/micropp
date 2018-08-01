@@ -25,8 +25,8 @@ using namespace std;
 
 
 template <int tdim>
-int micropp<tdim>::newton_raphson(const double strain[nvoi],
-		double *u, double *_err)
+int micropp<tdim>::newton_raphson(const double strain[nvoi], double *u,
+                                  double *b, double *du, double *_err)
 {
 	INST_START;
 
@@ -36,7 +36,7 @@ int micropp<tdim>::newton_raphson(const double strain[nvoi],
 	double lerr = 0.0, cg_err;
 
 	do {
-		lerr = assembly_rhs(u);  // Acts on b
+		lerr = assembly_rhs(u, b);  // Acts on b
 
 		if (lerr < NR_MAX_TOL)
 			break;

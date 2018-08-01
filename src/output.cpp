@@ -42,15 +42,15 @@ void micropp<tdim>::output(int time_step, int gp_id)
 		vars_new = gp_list[gp_id].int_vars_k;
 	}
 
-	u = gp_list[gp_id].u_k;
+	double *u = gp_list[gp_id].u_k;
 
-	calc_fields();
-	write_vtu(time_step, gp_id);
+	calc_fields(u);
+	write_vtu(u, time_step, gp_id);
 }
 
 
 template <int tdim>
-void micropp<tdim>::write_vtu(int time_step, int gp_id)
+void micropp<tdim>::write_vtu(double *u, int time_step, int gp_id)
 {
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
@@ -110,7 +110,7 @@ void micropp<tdim>::write_vtu(int time_step, int gp_id)
 	file << "\n</DataArray>" << endl;
 	file << "</Cells>" << endl;
 
-	file << "<PointData Vectors=\"displ,b\" >>" << endl;	// Vectors inside is a filter we should not use this here
+	file << "<PointData Vectors=\"displ\" >>" << endl;	// Vectors inside is a filter we should not use this here
 	file << "<DataArray type=\"Float64\" Name=\"displ\" NumberOfComponents=\"3\" format=\"ascii\" >" << endl;
 	for (int n = 0; n < nn; ++n) {
 		for (int d = 0; d < MAX_DIM; ++d)
@@ -119,13 +119,7 @@ void micropp<tdim>::write_vtu(int time_step, int gp_id)
 	}
 	file << "</DataArray>" << endl;
 
-	file << "<DataArray type=\"Float64\" Name=\"b\" NumberOfComponents=\"3\" format=\"ascii\" >" << endl;
-	for (int n = 0; n < nn; ++n) {
-		for (int d = 0; d < MAX_DIM; ++d)
-			file << (dim == 2 && d == 2 ? 0.0 : b[n * dim + d]) << " ";
- 		file << endl;
-	}
-	file << "</DataArray>" << endl;
+	//  Deleted here
 	file << "</PointData>" << endl;
 
 	file << "<CellData>" << endl;

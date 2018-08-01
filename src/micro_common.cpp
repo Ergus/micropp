@@ -22,8 +22,10 @@
 #include "micro.hpp"
 
 template<int tdim>
-micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
-		const double _micro_params[5], const material_t *_materials):
+micropp<tdim>::micropp(const int _ngp, const int size[3],
+                       const int _micro_type,
+                       const double _micro_params[5],
+                       const material_t *_materials):
 	ngp(_ngp),
 	nx(size[0]), ny(size[1]),
 	nz((tdim == 3) ? size[2] : 1),
@@ -37,7 +39,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 	nelem(nex * ney * nez),
 	lx(_micro_params[0]), ly(_micro_params[1]),
 	lz((tdim == 3) ? _micro_params[2] : 0.0),
-	dx(lx / nex), dy(ly / ney),	dz((tdim == 3) ? lz / nez : 0.0),
+	dx(lx / nex), dy(ly / ney),
+	dz((tdim == 3) ? lz / nez : 0.0),
 
 	special_param(_micro_params[3]), inv_tol(_micro_params[4]),
 
@@ -47,28 +50,15 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP)
 {
 	INST_CONSTRUCT; // Initialize the Intrumentation
-
+	// GP list here
 	gp_list = new gp_t<tdim>[ngp]();
+
 	for (int gp = 0; gp < ngp; gp++) {
 		gp_list[gp].u_n = (double *) calloc(nndim, sizeof(double));
 		gp_list[gp].u_k = (double *) malloc(nndim * sizeof(double));
 	}
 
-	b = (double *) malloc(nndim * sizeof(double));
-	du = (double *) malloc(nndim * sizeof(double));
-	u_aux = (double *) malloc(nndim * sizeof(double));
-
-	elem_type = (int *) malloc(nelem * sizeof(int));
-	elem_stress = (double *) malloc(nelem * nvoi * sizeof(double));
-	elem_strain = (double *) malloc(nelem * nvoi * sizeof(double));
-	vars_old_aux = (double *) calloc(num_int_vars, sizeof(double));
-	vars_new_aux = (double *) malloc(num_int_vars * sizeof(double));
-
-	assert(b && du && u_aux && elem_stress && elem_strain &&
-			elem_type && vars_old_aux && vars_new_aux);
-
-	output_files_header = false;
-
+	// Material list Here
 	int nParams;
 	if (micro_type == 0) {
 		// mat 1 = matrix
@@ -82,19 +72,30 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 		nParams = 5;
 	}
 
-	for (int i = 0; i < nParams; i++)
-		micro_params[i] = _micro_params[i];
+	material_list = (material_t *) malloc(numMaterials * sizeof(material_t));
+	{
+		ofstream file;
+		file.open("micropp_materials.dat");
+		file << scientific;
+		for (int i = 0; i < numMaterials; ++i) {
+			material_list[i] = _materials[i];
 
-	ofstream file;
-	file.open("micropp_materials.dat");
-	file << scientific;
-	for (int i = 0; i < numMaterials; ++i) {
-		material_list[i] = _materials[i];
-
-		file << setw(14)
-		     << material_list[i].E << " " << material_list[i].nu << " "
-		     << material_list[i].Sy << " " << material_list[i].Ka << endl;
+			file << setw(14)
+			     << material_list[i].E << " " << material_list[i].nu << " "
+			     << material_list[i].Sy << " " << material_list[i].Ka << endl;
+		}
 	}
+
+	elem_type = (int *) malloc(nelem * sizeof(int));
+	elem_stress = (double *) malloc(nelem * nvoi * sizeof(double));
+	elem_strain = (double *) malloc(nelem * nvoi * sizeof(double));
+	vars_old_aux = (double *) calloc(num_int_vars, sizeof(double));
+	vars_new_aux = (double *) malloc(num_int_vars * sizeof(double));
+
+	assert(elem_stress && elem_strain && elem_type &&
+	       vars_old_aux && vars_new_aux);
+
+	output_files_header = false;
 
 	for (int ez = 0; ez < nez; ++ez) {
 		for (int ey = 0; ey < ney; ++ey) {
@@ -111,6 +112,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 
 	calc_ctan_lin();
 
+	ofstream file;
 	file.close();
 
 	file.open("micropp_convergence.dat");
@@ -125,12 +127,8 @@ template <int tdim>
 micropp<tdim>::~micropp()
 {
 	INST_DESTRUCT;
-
 	ell_free(&A);
 
-	free(b);
-	free(du);
-	free(u_aux);
 	free(elem_stress);
 	free(elem_strain);
 	free(elem_type);
@@ -153,6 +151,10 @@ int micropp<tdim>::get_nl_flag(int gp_id) const
 template <int tdim>
 void micropp<tdim>::calc_ctan_lin()
 {
+	double *u_aux = (double *) malloc(nndim * sizeof(double));
+	double *b = (double *) malloc(nndim * sizeof(double));
+	double *du = (double *) malloc(nndim * sizeof(double));
+
 	vars_old = vars_old_aux;
 
 	for (int i = 0; i < nvoi; ++i) {
@@ -161,7 +163,7 @@ void micropp<tdim>::calc_ctan_lin()
 		eps_1[i] += D_EPS_CTAN_AVE;
 
 		double nr_err;
-		newton_raphson(eps_1, u_aux, &nr_err);
+		newton_raphson(eps_1, u_aux, b, du, &nr_err);
 
 		double sig_1[6];
 		calc_ave_stress(u_aux, sig_1);
@@ -169,6 +171,10 @@ void micropp<tdim>::calc_ctan_lin()
 		for (int v = 0; v < nvoi; ++v)
 			ctan_lin[v * nvoi + i] = sig_1[v] / D_EPS_CTAN_AVE;
 	}
+
+	free(u_aux);
+	free(b);
+	free(du);
 }
 
 
@@ -427,7 +433,7 @@ void micropp<tdim>::calc_ave_strain(const double *u,
 
 
 template<int tdim>
-void micropp<tdim>::calc_fields()
+void micropp<tdim>::calc_fields(double *u)
 {
 	for (int ez = 0; ez < nez; ++ez) { // 2D -> nez = 1
 		for (int ey = 0; ey < ney; ++ey) {
