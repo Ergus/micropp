@@ -186,7 +186,8 @@ void micropp<tdim>::write_info_files()
 		file << "# gp_id : ";
 		for (int igp = 0 ; igp < ngp; ++igp)
 			file << igp << " ";
-		file << "\n# nl_flag [1] # inv_max [2] # inv_tol [3]" << endl << "# nr_its  [4] # nr_tol  [5]" << endl;
+		file << "\n# nl_flag [1] # inv_max [2] # inv_tol [3]\n"
+		     << "# nr_its  [4] # nr_tol  [5]" << endl;
 		file.close();
 
 		file.open("micropp_eps_sig_ctan.dat", std::ios_base::app);
@@ -225,11 +226,11 @@ void micropp<tdim>::write_info_files()
 
 	file.open("micropp_eps_sig_ctan.dat", std::ios_base::app);
 	for (int igp = 0 ; igp < ngp; ++igp) {
-		for (int i = 0; i < 6; ++i)
+		for (int i = 0; i < nvoi; ++i)
 			file << setw(14) << gp_list[igp].macro_strain[i] << "\t";
-		for (int i = 0; i < 6; ++i)
+		for (int i = 0; i < nvoi; ++i)
 			file << setw(14) << gp_list[igp].macro_stress[i] << "\t";
-		for (int i = 0; i < 36; ++i)
+		for (int i = 0; i < nvoi * nvoi; ++i)
 			file << setw(14) << gp_list[igp].macro_ctan[i] << "\t";
 		file << " | ";
 	}
@@ -238,11 +239,13 @@ void micropp<tdim>::write_info_files()
 
 	file.open("micropp_int_vars_n.dat", std::ios_base::app);
 	for (int igp = 0 ; igp < ngp; ++igp) {
-		for (int i = 0; i < num_int_vars; ++i)
+		printf("igp = %d\n", igp);
+		for (int i = 0; i < num_int_vars; ++i) {
 			if (gp_list[igp].allocated)
 				file << setw(14) << gp_list[igp].int_vars_n[i] << " ";
 			else
 				file << setw(14) << 0.0 << " ";
+		}
 		file << "\t|\t";
 	}
 	file << endl;
