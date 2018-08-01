@@ -38,7 +38,6 @@ int main (int argc, char *argv[])
 	const int ney = ny - 1;
 	const int nez = nz - 1;
 
-	ell_matrix A1;
 	const double Ae[8 * 8] = {
 		3,   1,  -1,   1,   1,  -1,  -3,  -1,
 		1,   3,   1,  -1,  -1,   1,  -1,  -3,
@@ -55,7 +54,11 @@ int main (int argc, char *argv[])
 	const int ns[3] = { nx, ny, nz };
 	const int nfield = 1;
 	const int dim = 3;
-	ell_init(&A1, nfield, dim, ns, 1.0e-5, 20);
+
+	ell_matrix A1;
+	int *cols;
+	ell_init_cols(&cols, nfield, dim, ns);
+	ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 20);
 
 	cout << "A1.nrow =\t" << A1.nrow << endl;
 	cout << "A1.ncol =\t" << A1.ncol << endl;
@@ -98,7 +101,8 @@ int main (int argc, char *argv[])
 //
 //	cout << "Err =\t" << cg_err << "\tIts =\t" << cg_its << endl;
 //
-//	ell_free(&A1);
+	ell_free(&A1);
+	free(cols);
 
 	return 0;
 }

@@ -35,7 +35,6 @@ using namespace std;
 #define nod_index2D(i,j)   ((j)*nx + (i))
 
 typedef struct {
-
 	int n[3];       // nx ny nz
 	int nn;
 	int dim;
@@ -50,10 +49,13 @@ typedef struct {
 	double min_err;
 	double *k, *r, *z, *p, *q;
 
+
 } ell_matrix;
 
-void ell_init(ell_matrix *m, const int nfield, const int dim,
-		const int ns[3], const double min_err, const int max_its);
+void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3]);
+
+void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
+              const int ns[3], const double min_err, const int max_its);
 
 void ell_mvp(const ell_matrix *m, const double *x, double *y);
 

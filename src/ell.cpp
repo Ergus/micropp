@@ -28,17 +28,8 @@
 
 using namespace std;
 
-
-void ell_init(ell_matrix *m, const int nfield, const int dim,
-		const int ns[3], const double min_err, const int max_its)
+void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
 {
-	memcpy(m->n, ns, 3 * sizeof(int));
-	assert(ns[0] >= 0 && ns[1] >= 0 && ns[2] >= 0);
-	assert(dim >= 2 && dim <= 3);
-	assert(nfield > 0);
-	assert(max_its > 0);
-	assert(min_err > 0);
-
 	const int nx = ns[0];
 	const int ny = ns[1];
 	const int nz = ns[2];
@@ -47,32 +38,15 @@ void ell_init(ell_matrix *m, const int nfield, const int dim,
 	const int num_nodes = (dim == 2) ? 9 : 27;
 	const int nnz = num_nodes * nfield;
 	const int nrow = nn * nfield;
-
-	m->nn = nn;
-	m->dim = dim;
-	m->nfield = nfield;
-	m->nnz = nnz;
-	m->nrow = nrow;
-	m->ncol = nrow;
-	m->cols = (int *) malloc(nnz * nrow * sizeof(int));
-	m->vals = (double *) malloc(nnz * nrow * sizeof(double));
-
-	m->max_its = max_its;
-	m->min_err = min_err;
-	m->k = (double *) malloc(nn * nfield * sizeof(double));
-	m->r = (double *) malloc(nn * nfield * sizeof(double));
-	m->z = (double *) malloc(nn * nfield * sizeof(double));
-	m->p = (double *) malloc(nn * nfield * sizeof(double));
-	m->q = (double *) malloc(nn * nfield * sizeof(double));
+	*cols = (int *) malloc(nnz * nrow * sizeof(int));
 
 	if (dim == 2) {
-
 		for (int fi = 0; fi < nfield; ++fi) {
 			for (int xi = 0; xi < nx; ++xi) {
 				for (int yi = 0; yi < ny; ++yi) {
 
 					const int ni = nod_index2D(xi, yi);
-					int * const cols_ptr = &(m->cols[ni * nfield * nnz + fi * nnz]);
+					int * const cols_ptr = &((*cols)[ni * nfield * nnz + fi * nnz]);
 
 					int ix[num_nodes] = {
 						(yi == 0 || xi == 0)           ? 0 : ni - nx - 1,
@@ -100,7 +74,7 @@ void ell_init(ell_matrix *m, const int nfield, const int dim,
 					for (int zi = 0; zi < nz; ++zi) {
 
 						const int ni = nod_index3D(xi, yi, zi);
-						int * const cols_ptr = &(m->cols[ni * nfield * nnz + fi * nnz]);
+						int * const cols_ptr = &((*cols)[ni * nfield * nnz + fi * nnz]);
 
 						int ix[num_nodes] = {
 							(zi == 0 || yi == 0 || xi == 0)                ? 0 : ni - nxny - nx - 1,
@@ -141,7 +115,44 @@ void ell_init(ell_matrix *m, const int nfield, const int dim,
 			}
 		}
 	}
+}
 
+void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
+              const int ns[3], const double min_err, const int max_its)
+{
+	memcpy(m->n, ns, 3 * sizeof(int));
+	assert(ns[0] >= 0 && ns[1] >= 0 && ns[2] >= 0);
+	assert(dim >= 2 && dim <= 3);
+	assert(nfield > 0);
+	assert(max_its > 0);
+	assert(min_err > 0);
+
+	const int nx = ns[0];
+	const int ny = ns[1];
+	const int nz = ns[2];
+	const int nn = (dim == 2) ? nx * ny : nx * ny * nz;
+	const int nxny = nx * ny;
+	const int num_nodes = (dim == 2) ? 9 : 27;
+	const int nnz = num_nodes * nfield;
+	const int nrow = nn * nfield;
+
+	m->nn = nn;
+	m->dim = dim;
+	m->nfield = nfield;
+	m->nnz = nnz;
+	m->nrow = nrow;
+	m->ncol = nrow;
+
+	m->cols = cols;
+	m->vals = (double *) malloc(nnz * nrow * sizeof(double));
+
+	m->max_its = max_its;
+	m->min_err = min_err;
+	m->k = (double *) malloc(nn * nfield * sizeof(double));
+	m->r = (double *) malloc(nn * nfield * sizeof(double));
+	m->z = (double *) malloc(nn * nfield * sizeof(double));
+	m->p = (double *) malloc(nn * nfield * sizeof(double));
+	m->q = (double *) malloc(nn * nfield * sizeof(double));
 }
 
 void ell_mvp(const ell_matrix *m, const double *x, double *y)
@@ -437,10 +448,13 @@ void ell_set_bc_3D(ell_matrix *m)
 
 void ell_free(ell_matrix *m)
 {
-	if (m->cols != NULL)
-		free(m->cols);
-	if (m->vals != NULL)
-		free(m->vals);
+	free(m->vals);
+
+	free(m->k);
+	free(m->r);
+	free(m->z);
+	free(m->p);
+	free(m->q);
 }
 
 void print_ell(const ell_matrix *A)
