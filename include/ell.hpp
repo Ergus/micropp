@@ -49,10 +49,9 @@ typedef struct {
 	double min_err;
 	double *k, *r, *z, *p, *q;
 
-
 } ell_matrix;
 
-void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3]);
+int *ell_init_cols(const int nfield, const int dim, const int ns[3]);
 
 void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
               const int ns[3], const double min_err, const int max_its);

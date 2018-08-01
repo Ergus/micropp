@@ -28,7 +28,7 @@
 
 using namespace std;
 
-void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
+int *ell_init_cols(const int nfield, const int dim, const int ns[3])
 {
 	const int nx = ns[0];
 	const int ny = ns[1];
@@ -38,7 +38,7 @@ void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
 	const int num_nodes = (dim == 2) ? 9 : 27;
 	const int nnz = num_nodes * nfield;
 	const int nrow = nn * nfield;
-	*cols = (int *) malloc(nnz * nrow * sizeof(int));
+	int *cols = (int *) malloc(nnz * nrow * sizeof(int));
 
 	if (dim == 2) {
 		for (int fi = 0; fi < nfield; ++fi) {
@@ -46,7 +46,7 @@ void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
 				for (int yi = 0; yi < ny; ++yi) {
 
 					const int ni = nod_index2D(xi, yi);
-					int * const cols_ptr = &((*cols)[ni * nfield * nnz + fi * nnz]);
+					int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
 
 					int ix[num_nodes] = {
 						(yi == 0 || xi == 0)           ? 0 : ni - nx - 1,
@@ -74,7 +74,7 @@ void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
 					for (int zi = 0; zi < nz; ++zi) {
 
 						const int ni = nod_index3D(xi, yi, zi);
-						int * const cols_ptr = &((*cols)[ni * nfield * nnz + fi * nnz]);
+						int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
 
 						int ix[num_nodes] = {
 							(zi == 0 || yi == 0 || xi == 0)                ? 0 : ni - nxny - nx - 1,
@@ -115,6 +115,7 @@ void ell_init_cols(int **cols, const int nfield, const int dim, const int ns[3])
 			}
 		}
 	}
+	return cols;
 }
 
 void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
