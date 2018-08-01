@@ -50,12 +50,14 @@ int main (int argc, char *argv[])
 	const int nfield = 1;
 
 	ell_matrix A1;
+	int *cols;
 
 	double cg_err;
 
 	if (dim == 2) {
 
-		ell_init(&A1, nfield, dim, ns, 1.0e-5, 20);
+		ell_init_cols(&cols, nfield, dim, ns);
+		ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 20);
 
 		cout << "A1.nrow =\t" << A1.nrow << endl;
 		cout << "A1.ncol =\t" << A1.ncol << endl;
@@ -92,7 +94,8 @@ int main (int argc, char *argv[])
 
 	} else if (dim == 3) {
 
-		ell_init(&A1, nfield, dim, ns, 1.0e-5, 20);
+		ell_init_cols(&cols, nfield, dim, ns);
+		ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 20);
 
 		cout << "A1.nrow =\t" << A1.nrow << endl;
 		cout << "A1.ncol =\t" << A1.ncol << endl;
@@ -104,6 +107,7 @@ int main (int argc, char *argv[])
 	}
 
 	ell_free(&A1);
-
+	free(cols);
+	
 	return 0;
 }

@@ -37,7 +37,6 @@ int main (int argc, char *argv[])
 	const int nex = nx - 1;
 	const int ney = ny - 1;
 
-	ell_matrix A1;
 	const double Ae[4 * 4] = {
 		10.6667,   -2.6667,   -5.3333,   -2.6667,
 		-2.6667,   10.6667,   -2.6667,   -5.3333,
@@ -49,7 +48,12 @@ int main (int argc, char *argv[])
 	const int ns[3] = { nx, ny, 0 };
 	const int nfield = 1;
 	const int dim = 2;
-	ell_init(&A1, nfield, dim, ns, 1.0e-5, 50);
+
+	ell_matrix A1;
+	int *cols;
+
+	ell_init_cols(&cols, nfield, dim, ns);
+	ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 50);
 
 	cout << "A1.nrow =\t" << A1.nrow << endl;
 	cout << "A1.ncol =\t" << A1.ncol << endl;
@@ -111,6 +115,7 @@ int main (int argc, char *argv[])
 	assert (cg_its == 1);
 
 	ell_free(&A1);
+	free(cols);
 
 	return 0;
 }

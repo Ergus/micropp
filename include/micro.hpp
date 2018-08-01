@@ -83,7 +83,8 @@ class micropp {
 		material_t *material_list;
 		double ctan_lin[nvoi * nvoi];
 
-		ell_matrix A;
+		int *ell_cols;
+		// ell_matrix A;
 
 		// double *b;
 		// double *du;
@@ -108,8 +109,6 @@ class micropp {
 		                          { -CONSTXG, +CONSTXG, +CONSTXG } };
 
 		//  Nanos stuff
-		
-
 	protected:
 		// Common
 		void calc_ctan_lin();
@@ -138,8 +137,8 @@ class micropp {
 
 		void calc_fields(double *u);
 
-		int newton_raphson(const double strain[nvoi], double *u, double *b,
-		                   double *du, double *_err);
+		int newton_raphson(const double strain[nvoi], ell_matrix *A,
+		                   double *u, double *b, double *du, double *_err);
 
 		// Specialized
 		template <typename... Rest>
@@ -149,7 +148,7 @@ class micropp {
 		void set_displ_bc(const double strain[nvoi], double *u);
 
 		double assembly_rhs(const double *u, double *b) const;
-		void assembly_mat(const double *u);
+		void assembly_mat(const double *u, ell_matrix *A) const;
 
 		void calc_bmat(int gp, double bmat[nvoi][npe * dim]) const;
 

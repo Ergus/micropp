@@ -107,8 +107,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	}
 
 	const int ns[3] = { nx, ny, nz };
-	const int nfield = dim;
-	ell_init(&A, nfield, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
+
+	ell_init_cols(&ell_cols, dim, dim, ns);
 
 	calc_ctan_lin();
 
@@ -127,7 +127,6 @@ template <int tdim>
 micropp<tdim>::~micropp()
 {
 	INST_DESTRUCT;
-	ell_free(&A);
 
 	free(elem_stress);
 	free(elem_strain);
@@ -155,6 +154,10 @@ void micropp<tdim>::calc_ctan_lin()
 	double *b = (double *) malloc(nndim * sizeof(double));
 	double *du = (double *) malloc(nndim * sizeof(double));
 
+	const int ns[3] = { nx, ny, nz };
+	ell_matrix A;
+	ell_init(&A, ell_cols, dim, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
+
 	vars_old = vars_old_aux;
 
 	for (int i = 0; i < nvoi; ++i) {
@@ -163,7 +166,7 @@ void micropp<tdim>::calc_ctan_lin()
 		eps_1[i] += D_EPS_CTAN_AVE;
 
 		double nr_err;
-		newton_raphson(eps_1, u_aux, b, du, &nr_err);
+		newton_raphson(eps_1, &A, u_aux, b, du, &nr_err);
 
 		double sig_1[6];
 		calc_ave_stress(u_aux, sig_1);
@@ -172,6 +175,7 @@ void micropp<tdim>::calc_ctan_lin()
 			ctan_lin[v * nvoi + i] = sig_1[v] / D_EPS_CTAN_AVE;
 	}
 
+	ell_free(&A);
 	free(u_aux);
 	free(b);
 	free(du);

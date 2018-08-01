@@ -214,20 +214,20 @@ void micropp<2>::get_elem_mat(const double *u,
 
 
 template <>
-void micropp<2>::assembly_mat(const double *u)
+void micropp<2>::assembly_mat(const double *u, ell_matrix *A) const
 {
 	INST_START;
 
-	ell_set_zero_mat(&A);
+	ell_set_zero_mat(A);
 
 	double Ae[npe * dim * npe * dim];
 	for (int ex = 0; ex < nex; ++ex) {
 		for (int ey = 0; ey < ney; ++ey) {
 			get_elem_mat(u, Ae, ex, ey);
-			ell_add_2D(&A, ex, ey, Ae);
+			ell_add_2D(A, ex, ey, Ae);
 		}
 	}
-	ell_set_bc_2D(&A);
+	ell_set_bc_2D(A);
 }
 
 

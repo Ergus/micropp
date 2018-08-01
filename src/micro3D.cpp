@@ -275,22 +275,22 @@ void micropp<3>::get_elem_mat(const double *u,
 
 
 template <>
-void micropp<3>::assembly_mat(const double *u)
+void micropp<3>::assembly_mat(const double *u, ell_matrix *A) const
 {
 	INST_START;
 
-	ell_set_zero_mat(&A);
+	ell_set_zero_mat(A);
 
 	double Ae[npe * dim * npe * dim];
 	for (int ex = 0; ex < nex; ++ex) {
 		for (int ey = 0; ey < ney; ++ey) {
 			for (int ez = 0; ez < nez; ++ez) {
 				get_elem_mat(u, Ae, ex, ey, ez);
-				ell_add_3D(&A, ex, ey, ez, Ae);
+				ell_add_3D(A, ex, ey, ez, Ae);
 			}
 		}
 	}
-	ell_set_bc_3D(&A);
+	ell_set_bc_3D(A);
 }
 
 

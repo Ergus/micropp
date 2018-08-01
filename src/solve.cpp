@@ -25,8 +25,8 @@ using namespace std;
 
 
 template <int tdim>
-int micropp<tdim>::newton_raphson(const double strain[nvoi], double *u,
-                                  double *b, double *du, double *_err)
+int micropp<tdim>::newton_raphson(const double strain[nvoi], ell_matrix *A,
+                                  double *u, double *b, double *du, double *_err)
 {
 	INST_START;
 
@@ -41,10 +41,10 @@ int micropp<tdim>::newton_raphson(const double strain[nvoi], double *u,
 		if (lerr < NR_MAX_TOL)
 			break;
 
-		assembly_mat(u);   // Acts on A
+		assembly_mat(u, A);   // Acts on A
 
 		// in(b) inout
-		int cg_its = ell_solve_cgpd(&A, b, du, &cg_err);
+		int cg_its = ell_solve_cgpd(A, b, du, &cg_err);
 
 		for (int i = 0; i < nn * dim; ++i)
 			u[i] += du[i];
