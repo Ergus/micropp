@@ -58,6 +58,10 @@ void micropp<tdim>::homogenize()
 {
 	INST_START;
 
+	double *u_aux = (double *) malloc(nndim * sizeof(double));
+	double *du_aux = (double *) malloc(nndim * sizeof(double));
+	double *b = (double *) malloc(nndim * sizeof(double));
+
 	for (int igp = 0; igp < ngp; ++igp) {
 		gp_t<tdim> * const gp_ptr = &gp_list[igp];
 
@@ -94,8 +98,10 @@ void micropp<tdim>::homogenize()
 			memcpy(gp_ptr->u_k, gp_ptr->u_n, nndim * sizeof(double));
 
 			double nr_err;
-			int nr_its = newton_raphson(gp_ptr->macro_strain,
-										gp_ptr->u_k, &nr_err);
+
+			int nr_its = newton_raphson(gp_ptr->macro_strain, gp_ptr->u_k,
+			                            b, du_aux, &nr_err);
+
 			gp_ptr->nr_its[0] = nr_its;
 			gp_ptr->nr_err[0] = nr_err;
 
@@ -121,7 +127,7 @@ void micropp<tdim>::homogenize()
 				memcpy(eps_1, gp_ptr->macro_strain, nvoi * sizeof(double));
 				eps_1[i] += D_EPS_CTAN_AVE;
 
-				nr_its = newton_raphson(eps_1, u_aux, &nr_err);
+				nr_its = newton_raphson(eps_1, u_aux, b, du_aux, &nr_err);
 				gp_ptr->nr_its[i + 1] = nr_its;
 				gp_ptr->nr_err[i + 1] = nr_err;
 
@@ -135,6 +141,10 @@ void micropp<tdim>::homogenize()
 		}
 		gp_ptr->inv_max = inv_max;
 	}
+
+	free(u_aux);
+	free(du_aux);
+	free(b);
 }
 
 template <int tdim>
