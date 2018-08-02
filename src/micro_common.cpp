@@ -51,11 +51,21 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 {
 	INST_CONSTRUCT; // Initialize the Intrumentation
 	// GP list here
-	gp_list = new gp_t<tdim>[ngp]();
+	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
+
+	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+
+	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
+	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 
 	for (int gp = 0; gp < ngp; gp++) {
-		gp_list[gp].u_n = (double *) calloc(nndim, sizeof(double));
-		gp_list[gp].u_k = (double *) malloc(nndim * sizeof(double));
+
+		d_set_gp(&(dint_vars_n[num_int_vars * gp]),
+		         &(dint_vars_k[num_int_vars * gp]),
+		         &(du_n[nndim *gp]),
+		         &(du_k[nndim *gp]), nndim,
+		         &(gp_list[gp]));
 	}
 
 	// Material list Here
@@ -74,10 +84,9 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 
 	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
 	{
-		ofstream file;
-		file << scientific;
 		for (int i = 0; i < numMaterials; ++i)
-			set(_materials[i], &material_list[i]);
+			d_set(_materials[i], &material_list[i]);
+
 	}
 
 	elem_type = (int *) rrd_malloc(nelem * sizeof(int));
@@ -86,17 +95,13 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 			for (int ex = 0; ex < nex; ++ex) {
 				const int e_i = glo_elem(ex, ey, ez);
 				int type = get_elem_type(ex, ey, ez);
-				set(type, &elem_type[e_i]);
+				d_set(type, &elem_type[e_i]);
 			}
 		}
 	}
 
 	elem_stress = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 	elem_strain = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
-	// vars_old_aux = (double *) calloc(num_int_vars, sizeof(double));
-	// vars_new_aux = (double *) malloc(num_int_vars * sizeof(double));
-
-	assert(elem_stress && elem_strain && elem_type);
 
 	output_files_header = false;
 
@@ -105,6 +110,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 	ell_cols = ell_init_cols(dim, dim, ns);
 
 
+	#pragma oss taskwait
 	calc_ctan_lin();
 
 	ofstream file;
@@ -121,11 +127,17 @@ micropp<tdim>::~micropp()
 {
 	INST_DESTRUCT;
 
-	free(elem_stress);
-	free(elem_strain);
-	free(elem_type);
+	rrd_free(elem_stress);
+	rrd_free(elem_strain);
+	rrd_free(elem_type);
 
-	delete [] gp_list;
+	rrd_free(material_list);
+
+	rrd_free(gp_list);
+	rrd_free(du_n);
+	rrd_free(du_k);
+	rrd_free(dint_vars_n);
+	rrd_free(dint_vars_k);
 }
 
 

@@ -92,6 +92,8 @@ class micropp {
 		int *ell_cols;
 		const int ell_cols_size;
 
+		double *du_n, *du_k, *dint_vars_n, *dint_vars_k;
+
 	protected:
 		// Common
 		void calc_ctan_lin();

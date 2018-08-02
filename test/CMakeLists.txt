@@ -6,7 +6,7 @@ set(testsources
   test2d_1.cpp
   test3d_1.cpp
   test3d_2.cpp
-  test3d_3.f90
+  #test3d_3.f90
   test3d_4.cpp
   test3d_5.cpp
   test_get_elem_nodes.cpp
@@ -32,7 +32,7 @@ endforeach ()
 add_test(NAME test2d_1 COMMAND test2d_1 5 5 10)
 add_test(NAME test3d_1 COMMAND test3d_1 5 5 5 1)
 add_test(NAME test3d_2 COMMAND test3d_2 5 5 5 10)
-add_test(NAME test3d_3 COMMAND test3d_3 5 5 5 10)
+#add_test(NAME test3d_3 COMMAND test3d_3 5 5 5 10)
 add_test(NAME test3d_4 COMMAND test3d_4 5 5 5 3 10)
 add_test(NAME test3d_5 COMMAND test3d_5 5 5 5 2 10)
 add_test(NAME test_ell_1 COMMAND test_ell_1)

@@ -32,31 +32,53 @@
 
 #include "nanos6.h"
 
-inline void *rrd_malloc(size_t size)
+static inline void *rrd_malloc(size_t size)
 {
+	dprintf("Using dmalloc\n");
 	void *ret = nanos_dmalloc(size, DMALLOC_RR, 0, NULL);
 	assert(ret != NULL);
 
 	return ret;
 }
 
+static inline void rrd_free(void *in)
+{
+	dprintf("Using dfree\n");
+	nanos_dfree(in);
+}
+
 #else
 
-inline void *rrd_malloc(size_t size)
+static inline void *rrd_malloc(size_t size)
 {
+	dprintf("Using libc malloc\n");
 	void *ret = malloc(size);
 	assert(ret != NULL);
 	return ret;
 }
 
-#endif
-
-#pragma oss task(out)
-template <typename T>
-void set(T in, T *out)
+static inline void rrd_free(void *in)
 {
-	*out = in;
+	dprintf("Using libc_free\n");
+	free(in);
 }
 
+#endif
+
+#pragma oss task out(_out[0])
+template <typename T>
+void d_set(T _in, T *_out)
+{
+	_out[0] = _in;
+}
+
+#pragma oss task out(_out[0]) out(_u_n[0; nndim])
+template <int tdim>
+void d_set_gp(double *const _int_vars_n, double *const _int_vars_k,
+              double *const _u_n, double *const _u_k, int nndim,
+              gp_t<tdim> *_out)
+{
+	_out[0].init(_int_vars_n, _int_vars_k, _u_n, _u_k, nndim);
+}
 
 #endif //TASKS_HPP
