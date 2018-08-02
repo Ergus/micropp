@@ -81,7 +81,13 @@ void micropp<2>::isolin_get_stress(
 template <>
 void micropp<2>::calc_bmat(int gp, double bmat[nvoi][npe *dim])	const
 {
-	const double dsh[4][2] = {
+
+	constexpr double xg[npe][dim] = { { -CONSTXG, -CONSTXG },
+	                                  { +CONSTXG, -CONSTXG },
+	                                  { +CONSTXG, +CONSTXG },
+	                                  { -CONSTXG, +CONSTXG } };
+
+	const double dsh[npe][dim] = {
 		{ -(1 - xg[gp][1]) / 4 * 2 / dx,
 		  -(1 - xg[gp][0]) / 4 * 2 / dy },
 		{ +(1 - xg[gp][1]) / 4 * 2 / dx,
@@ -91,7 +97,7 @@ void micropp<2>::calc_bmat(int gp, double bmat[nvoi][npe *dim])	const
 		{ -(1 + xg[gp][1]) / 4 * 2 / dx,
 		  +(1 - xg[gp][0]) / 4 * 2 / dy } };
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < npe; ++i) {
 		bmat[0][i * dim    ] = dsh[i][0];
 		bmat[0][i * dim + 1] = 0;
 		bmat[1][i * dim    ] = 0;

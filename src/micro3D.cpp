@@ -86,7 +86,16 @@ void micropp<3>::calc_bmat(int gp, double bmat[nvoi][npe * dim]) const
 {
 	INST_START;
 
-	const double dsh[8][3] = {
+	constexpr double xg[npe][dim] = { { -CONSTXG, -CONSTXG, -CONSTXG },
+	                                  { +CONSTXG, -CONSTXG, -CONSTXG },
+	                                  { +CONSTXG, +CONSTXG, -CONSTXG },
+	                                  { -CONSTXG, +CONSTXG, -CONSTXG },
+	                                  { -CONSTXG, -CONSTXG, +CONSTXG },
+	                                  { +CONSTXG, -CONSTXG, +CONSTXG },
+	                                  { +CONSTXG, +CONSTXG, +CONSTXG },
+	                                  { -CONSTXG, +CONSTXG, +CONSTXG } };
+
+	const double dsh[npe][dim] = {
 		{ -(1 - xg[gp][1]) * (1 - xg[gp][2]) / 8. * 2. / dx,
 		  -(1 - xg[gp][0]) * (1 - xg[gp][2]) / 8. * 2. / dy,
 		  -(1 - xg[gp][0]) * (1 - xg[gp][1]) / 8. * 2. / dz },
@@ -112,7 +121,7 @@ void micropp<3>::calc_bmat(int gp, double bmat[nvoi][npe * dim]) const
 		  +(1 - xg[gp][0]) * (1 + xg[gp][2]) / 8. * 2. / dy,
 		  +(1 - xg[gp][0]) * (1 + xg[gp][1]) / 8. * 2. / dz } };
 
-	for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < npe; ++i) {
 		bmat[0][i * dim    ] = dsh[i][0];
 		bmat[0][i * dim + 1] = 0;
 		bmat[0][i * dim + 2] = 0;
