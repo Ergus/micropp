@@ -41,31 +41,34 @@ class gp_t {
 		double nr_err[nvoi + 1];
 		double inv_max;
 
-		gp_t():
-			int_vars_n(nullptr),
-			int_vars_k(nullptr),
-			inv_max(-1.0),
-			allocated(false)
-		{}
+		gp_t() = delete;
+
+		void init(double *_int_vars_n, double *_int_vars_k,
+		          double *_u_n, double *_u_k, int nndim)
+		{
+			assert(nndim > 0);
+			allocated = false;
+
+			int_vars_n = _int_vars_n;
+			int_vars_k = _int_vars_k;
+
+			u_n = _u_n;
+			u_k = _u_n;
+
+			inv_max = -1.0;
+
+			memset(u_n, 0, nndim * sizeof(double));
+		}
 
 		~gp_t()
 		{
-			free(u_n);
-			if (allocated) {
-				free(int_vars_n);
-				free(int_vars_k);
-			}
 		}
 
 		void allocate(const int num_int_vars)
 		{
 			assert(!allocated);
 
-			int_vars_n = (double *) calloc(num_int_vars, sizeof(double));
-			int_vars_k = (double *) malloc(num_int_vars * sizeof(double));
-
-			allocated = (int_vars_n && int_vars_k);
-			assert(allocated);
+			allocated = true;
 		}
 
 
