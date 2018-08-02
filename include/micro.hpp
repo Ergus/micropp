@@ -88,15 +88,6 @@ class micropp {
 		double *elem_stress;
 		double *elem_strain;
 
-		const double xg[8][3] = { { -CONSTXG, -CONSTXG, -CONSTXG },
-		                          { +CONSTXG, -CONSTXG, -CONSTXG },
-		                          { +CONSTXG, +CONSTXG, -CONSTXG },
-		                          { -CONSTXG, +CONSTXG, -CONSTXG },
-		                          { -CONSTXG, -CONSTXG, +CONSTXG },
-		                          { +CONSTXG, -CONSTXG, +CONSTXG },
-		                          { +CONSTXG, +CONSTXG, +CONSTXG },
-		                          { -CONSTXG, +CONSTXG, +CONSTXG } };
-
 		// Nanos stuff
 		int *ell_cols;
 		const int ell_cols_size;
