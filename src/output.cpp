@@ -33,24 +33,31 @@ void micropp<tdim>::output(int time_step, int gp_id)
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
 
-	if (!gp_list[gp_id].allocated) {
-		vars_old = vars_old_aux;
-		vars_new = vars_new_aux;
-		memset(vars_old, 0, num_int_vars * sizeof(double));
+	gp_t<tdim> * const gp_ptr = &gp_list[gp_id];
+
+	double *vold, *vnew, *aux_old = nullptr, *aux_new = nullptr;
+	if (!gp_ptr->allocated) {
+
+		aux_old = (double *) calloc(num_int_vars, sizeof(double));
+		aux_new = (double *) malloc(num_int_vars * sizeof(double));
+
+		vold = aux_old;
+		vnew = aux_new;
+
 	} else {
-		vars_old = gp_list[gp_id].int_vars_n;
-		vars_new = gp_list[gp_id].int_vars_k;
+		vold = gp_ptr->int_vars_n;
+		vnew = gp_ptr->int_vars_k;
 	}
 
-	double *u = gp_list[gp_id].u_k;
+	double *u = gp_ptr->u_k;
 
-	calc_fields(u);
-	write_vtu(u, time_step, gp_id);
+	calc_fields(vold, u);
+	write_vtu(vold, u, time_step, gp_id);
 }
 
 
 template <int tdim>
-void micropp<tdim>::write_vtu(double *u, int time_step, int gp_id)
+void micropp<tdim>::write_vtu(const double *old, double *u, int time_step, int gp_id)
 {
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
@@ -151,7 +158,7 @@ void micropp<tdim>::write_vtu(double *u, int time_step, int gp_id)
 		for (int gp = 0; gp < npe; ++gp) {
 			double tmp = 0.0;
 			for (int v = 0; v < nvoi; ++v)
-				tmp += vars_old[intvar_ix(e, gp, v)] * vars_old[intvar_ix(e, gp, v)];
+				tmp += old[intvar_ix(e, gp, v)] * old[intvar_ix(e, gp, v)];
 			plasticity += sqrt(tmp);
 		}
 		file << plasticity / npe << " ";
@@ -162,7 +169,7 @@ void micropp<tdim>::write_vtu(double *u, int time_step, int gp_id)
 	for (int e = 0; e < nelem; ++e) {
 		double hardening = 0.;
 		for (int gp = 0; gp < npe; ++gp)
-			hardening += vars_old[intvar_ix(e, gp, 6)];
+			hardening += old[intvar_ix(e, gp, 6)];
 		file << hardening / npe << " ";
 	}
 	file << "\n</DataArray>" << endl;

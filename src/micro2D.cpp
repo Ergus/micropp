@@ -23,7 +23,7 @@
 
 
 template <>
-void micropp<2>::set_displ_bc(const double eps[nvoi], double *u)
+void micropp<2>::set_displ_bc(const double eps[nvoi], double *u) const
 {
 	const double eps_t[dim][dim] =
 		{ {       eps[0], 0.5 * eps[2] },
@@ -103,10 +103,9 @@ void micropp<2>::calc_bmat(int gp, double bmat[nvoi][npe *dim])	const
 
 
 template <>
-double micropp<2>::assembly_rhs(const double *u, double *b) const
+double micropp<2>::assembly_rhs(const double *u, const double *old,
+                                double *b) const
 {
-	INST_START;
-
 	memset(b, 0, nndim * sizeof(double));
 
 	double be[dim * npe];
@@ -122,7 +121,7 @@ double micropp<2>::assembly_rhs(const double *u, double *b) const
 				for (int d = 0; d < dim; ++d)
 					index[j * dim + d] = n[j] * dim + d;
 
-			get_elem_rhs(u, be, ex, ey);
+			get_elem_rhs(u, old, be, ex, ey);
 
 			for (int i = 0; i < npe * dim; ++i)
 				b[index[i]] += be[i];
@@ -162,7 +161,7 @@ double micropp<2>::assembly_rhs(const double *u, double *b) const
 
 template <>
 template <>
-void micropp<2>::get_elem_mat(const double *u,
+void micropp<2>::get_elem_mat(const double *u, const double *old,
 		double Ae[npe * dim * npe * dim], int ex, int ey) const
 {
 	INST_START;
@@ -214,7 +213,8 @@ void micropp<2>::get_elem_mat(const double *u,
 
 
 template <>
-void micropp<2>::assembly_mat(const double *u, ell_matrix *A) const
+void micropp<2>::assembly_mat(const double *u, const double *old,
+                              ell_matrix *A) const
 {
 	INST_START;
 
@@ -223,7 +223,7 @@ void micropp<2>::assembly_mat(const double *u, ell_matrix *A) const
 	double Ae[npe * dim * npe * dim];
 	for (int ex = 0; ex < nex; ++ex) {
 		for (int ey = 0; ey < ney; ++ey) {
-			get_elem_mat(u, Ae, ex, ey);
+			get_elem_mat(u, old, Ae, ex, ey);
 			ell_add_2D(A, ex, ey, Ae);
 		}
 	}
@@ -232,7 +232,8 @@ void micropp<2>::assembly_mat(const double *u, ell_matrix *A) const
 
 
 template<>
-bool micropp<2>::calc_vars_new(const double *u)
+bool micropp<2>::calc_vars_new(const double *u, const double *_old,
+                               double *_new) const
 {
     return false;
 }
