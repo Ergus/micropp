@@ -48,7 +48,7 @@ int *ell_init_cols(const int nfield, const int dim, const int ns[3])
 					const int ni = nod_index2D(xi, yi);
 					int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
 
-					int ix[num_nodes] = {
+					int ix[] = {
 						(yi == 0 || xi == 0)           ? 0 : ni - nx - 1,
 						(yi == 0)                      ? 0 : ni - nx,
 						(yi == 0 || xi == nx - 1)      ? 0 : ni - nx + 1,
@@ -76,7 +76,7 @@ int *ell_init_cols(const int nfield, const int dim, const int ns[3])
 						const int ni = nod_index3D(xi, yi, zi);
 						int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
 
-						int ix[num_nodes] = {
+						int ix[] = {
 							(zi == 0 || yi == 0 || xi == 0)                ? 0 : ni - nxny - nx - 1,
 							(zi == 0 || yi == 0)                           ? 0 : ni - nxny - nx,
 							(zi == 0 || yi == 0 || xi == nx - 1)           ? 0 : ni - nxny - nx + 1,
