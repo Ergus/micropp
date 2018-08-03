@@ -74,6 +74,9 @@ class micropp {
 		const double special_param, inv_tol, wg, ivol;
 
 		const int micro_type, num_int_vars;
+
+		const micropp *orig_ptr;
+
 		gp_t<tdim> *gp_list;
 
 		// Other variables
