@@ -48,7 +48,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	vol_tot((tdim == 3) ? lx * ly * lz : lx * ly),
 	ivol(1.0 / (wg * npe)),
 	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP), 
-	ell_cols_size(mypow(3, dim) * dim * nn * dim)
+	ell_cols_size(mypow(3, dim) * dim * nn * dim),
+	orig_ptr(this)
 {
 	INST_CONSTRUCT; // Initialize the Intrumentation
 	// GP list here
@@ -136,6 +137,9 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 template <int tdim>
 micropp<tdim>::~micropp()
 {
+	if (this != orig_ptr)
+		return;
+
 	INST_DESTRUCT;
 
 	rrd_free(elem_stress);
