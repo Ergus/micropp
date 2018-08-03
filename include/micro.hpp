@@ -100,8 +100,7 @@ class micropp {
 	protected:
 		// Common
 		void calc_ctan_lin();
-		bool is_linear(const double *macro_strain, double *inv_max) const;
-		double get_inv_1(const double *tensor) const;
+
 		material_t get_material(const int e) const;
 
 		void get_strain(const double *u, int gp, double strain_gp[nvoi],
@@ -176,6 +175,23 @@ class micropp {
 
 		void isolin_get_stress(const material_t *material, const double eps[6],
 		                       double stress[6]) const;
+
+		friend void homogenize_task<tdim>(micropp<tdim> self,
+                     const int *ell_cols, const int ell_cols_size,
+                     const material_t *material_list, const int numMaterials,
+                     int *elem_type, int nelem,
+                     gp_t<tdim> *gp_ptr,
+                     double *u_k, double *u_n, int nndim,
+                     double *vars_n_old, double *vars_k_new, int num_int_vars);
+
+		friend void homogenize_conditional<tdim>(micropp<tdim> self,
+                            const int *ell_cols, const int ell_cols_size,
+                            const material_t *material_list, const int numMaterials,
+                            int *elem_type, int nelem,
+                            gp_t<tdim> *gp_ptr,
+                            double *u_k, double *u_n, const int nndim,
+                            const bool allocated, double *vars_n_old,
+                            double *vars_k_new, const int num_int_vars);
 
 	public:
 		micropp() = delete;

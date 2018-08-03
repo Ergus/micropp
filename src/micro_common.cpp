@@ -20,6 +20,7 @@
  */
 
 #include "micro.hpp"
+#include "tasks.hpp"
 
 template<int tdim>
 micropp<tdim>::micropp(const int _ngp, const int size[3],
@@ -166,22 +167,6 @@ int micropp<tdim>::get_nl_flag(int gp_id) const
 
 
 template <int tdim>
-bool micropp<tdim>::is_linear(const double *macro_strain, double *inv_max) const
-{
-	double macro_stress[6] = { 0.0 };
-	for (int i = 0; i < nvoi; ++i)
-		for (int j = 0; j < nvoi; ++j)
-			macro_stress[i] += ctan_lin[i * nvoi + j] * macro_strain[j];
-
-	const double inv = get_inv_1(macro_stress);
-	if (fabs(inv) > *inv_max)
-		*inv_max = fabs(inv);
-
-	return (fabs(inv) < inv_tol);
-}
-
-
-template <int tdim>
 void micropp<tdim>::calc_ctan_lin()
 {
 	double *u_aux = (double *) malloc(nndim * sizeof(double));
@@ -212,20 +197,6 @@ void micropp<tdim>::calc_ctan_lin()
 	free(u_aux);
 	free(b);
 	free(du);
-}
-
-
-template <int tdim>
-double micropp<tdim>::get_inv_1(const double *tensor) const
-{
-	assert(dim == 2 || dim == 3);
-
-	const double ret = tensor[0] + tensor[1];
-
-	if (dim == 2)
-		return ret;
-
-	return ret + tensor[2];
 }
 
 
