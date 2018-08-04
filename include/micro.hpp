@@ -100,8 +100,7 @@ class micropp {
 	protected:
 		// Common
 		void calc_ctan_lin();
-		bool is_linear(const double *macro_strain, double *inv_max) const;
-		double get_inv_1(const double *tensor) const;
+
 		material_t get_material(const int e) const;
 
 		void get_strain(const double *u, int gp,

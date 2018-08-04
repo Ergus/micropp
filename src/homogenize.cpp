@@ -58,20 +58,10 @@ void micropp<tdim>::homogenize()
 {
 	INST_START;
 
-	double *u_aux = (double *) malloc(nndim * sizeof(double));
-	double *du_aux = (double *) malloc(nndim * sizeof(double));
-	double *b = (double *) malloc(nndim * sizeof(double));
+	for (int gp = 0; gp < ngp; ++gp) {
+		gp_t<tdim> * const gp_ptr = &gp_list[gp];
 
-	const int ns[3] = { nx, ny, nz };
-	ell_matrix A;
-	ell_init(&A, ell_cols, dim, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
-
-	for (int igp = 0; igp < ngp; ++igp) {
-		gp_t<tdim> * const gp_ptr = &gp_list[igp];
-
-		double inv_max = -1.0e10;
-
-		if (is_linear(gp_ptr->macro_strain, &inv_max) && (!gp_ptr->allocated)) {
+		if (gp_ptr->is_linear(ctan_lin, inv_tol, -1.0e10) && (!gp_ptr->allocated)) {
 
 			/* This is a risky optimization and should be used with extreme
 			 * caution setting the variable <inv_tol> to a right and small value
@@ -88,6 +78,14 @@ void micropp<tdim>::homogenize()
 			memset(gp_ptr->nr_err, 0, (1 + nvoi) * sizeof(double));
 
 		} else {
+
+			double *u_aux = (double *) malloc(nndim * sizeof(double));
+			double *du_aux = (double *) malloc(nndim * sizeof(double));
+			double *b = (double *) malloc(nndim * sizeof(double));
+
+			const int ns[3] = { nx, ny, nz };
+			ell_matrix A;
+			ell_init(&A, ell_cols, dim, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
 
 			double *vold, *vnew, *aux_old = nullptr, *aux_new = nullptr;
 			if (!gp_ptr->allocated) {
@@ -147,14 +145,13 @@ void micropp<tdim>::homogenize()
 			}
 			free(aux_old);
 			free(aux_new);
-		}
-		gp_ptr->inv_max = inv_max;
-	}
 
-	ell_free(&A);
-	free(u_aux);
-	free(du_aux);
-	free(b);
+			ell_free(&A);
+			free(u_aux);
+			free(du_aux);
+			free(b);
+		}
+	}
 }
 
 template <int tdim>

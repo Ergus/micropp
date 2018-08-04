@@ -19,8 +19,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef GP_HPP
+#define GP_HPP
+
 #include <cassert>
 #include <cstdlib>
+#include <cmath>
 
 template <int dim>
 class gp_t {
@@ -53,7 +57,7 @@ class gp_t {
 			int_vars_k = _int_vars_k;
 
 			u_n = _u_n;
-			u_k = _u_n;
+			u_k = _u_k;
 
 			inv_max = -1.0;
 
@@ -61,13 +65,13 @@ class gp_t {
 		}
 
 		~gp_t()
-		{
-		}
+		{}
 
 		void allocate(const int num_int_vars)
 		{
 			assert(!allocated);
 
+			memset(int_vars_n, 0, num_int_vars * sizeof(double));
 			allocated = true;
 		}
 
@@ -82,4 +86,25 @@ class gp_t {
 			u_n = u_k;
 			u_k = tmp;
 		}
+
+
+		bool is_linear(const double *ctan_lin, const double _inv_tol,
+		               double _inv_max)
+		{
+			double macro_stress[nvoi] = { 0.0 };
+			for (int i = 0; i < nvoi; ++i)
+				for (int j = 0; j < nvoi; ++j)
+					macro_stress[i] += ctan_lin[i * nvoi + j] * macro_strain[j];
+
+			double inv = macro_stress[0];
+			for(int i = 1; i < dim; ++i)
+				inv += macro_stress[i];
+
+			if (fabs(inv) > _inv_max)
+				inv_max = fabs(inv);
+
+			return (fabs(inv) < _inv_tol);
+		}
 };
+
+#endif
