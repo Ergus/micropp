@@ -103,26 +103,26 @@ void allocate_gp(gp_t<tdim> *_out, double *int_vars_n, int num_int_vars)
 //	inout(vars_n_old[0; num_int_vars]) \
 //	inout(vars_k_new[0; num_int_vars])
 
-template <int tdim> class micropp;
+// template <int tdim> class micropp;
+// 
+// template <int tdim>
+// void homogenize_conditional(micropp<tdim> self,
+// const int *ell_cols, const int ell_cols_size,
+// const material_t *material_list, const int numMaterials,
+// int *elem_type, int nelem,
+// gp_t<tdim> *gp_ptr,
+// double *u_k, double *u_n, const int nndim,
+// const bool allocated,
+// double *vars_n_old, double *vars_k_new, const int num_int_vars);
+// 
+// template <int tdim>
+// void homogenize_task(micropp<tdim> self,
+// const int *ell_cols, const int ell_cols_size,
+// const material_t *material_list, const int numMaterials,
+// int *elem_type, int nelem,
+// gp_t<tdim> *gp_ptr,
+// double *u_k, double *u_n, int nndim,
+// double *vars_n_old, double *vars_k_new, int num_int_vars);
 
-template <int tdim>
-void homogenize_task(micropp<tdim> self,
-                     const int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<tdim> *gp_ptr,
-                     double *u_k, double *u_n, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars);
-
-
-template <int tdim>
-void homogenize_conditional(micropp<tdim> self,
-                            const int *ell_cols, const int ell_cols_size,
-                            const material_t *material_list, const int numMaterials,
-                            int *elem_type, int nelem,
-                            gp_t<tdim> *gp_ptr,
-                            double *u_k, double *u_n, const int nndim,
-                            const bool allocated,
-                            double *vars_n_old, double *vars_k_new, const int num_int_vars);
 
 #endif //TASKS_HPP

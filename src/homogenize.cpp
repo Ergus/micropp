@@ -81,3 +81,5 @@ void micropp<tdim>::update_vars()
 // Explicit instantiation
 template class micropp<2>;
 template class micropp<3>;
+
+

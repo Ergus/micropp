@@ -22,17 +22,17 @@
 #include "micro.hpp"
 #include "tasks.hpp"
 
-template<int tdim>
-micropp<tdim>::micropp(const int _ngp, const int size[3],
-                       const int _micro_type,
-                       const double _micro_params[5],
-                       const material_t *_materials):
+data::data(const int tdim, const int _ngp, const int size[3],
+           const int _micro_type,
+           const double _micro_params[5],
+           const material_t *_materials):
+
 	ngp(_ngp),
 	nx(size[0]), ny(size[1]),
 	nz((tdim == 3) ? size[2] : 1),
 
 	nn(nx * ny * nz),
-	nndim(nn * dim),
+	nndim(nn * tdim),
 
 	nex(nx - 1), ney(ny - 1),
 	nez((tdim == 3) ? (nz - 1) : 1),
@@ -45,22 +45,37 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 
 	special_param(_micro_params[3]), inv_tol(_micro_params[4]),
 
-	wg(((tdim == 3) ? dx * dy * dz : dx * dy) / npe),
+	wg(((tdim == 3) ? dx * dy * dz : dx * dy) / mypow(2, tdim)),
 	vol_tot((tdim == 3) ? lx * ly * lz : lx * ly),
-	ivol(1.0 / (wg * npe)),
-	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP), 
-	ell_cols_size(mypow(3, dim) * dim * nn * dim),
+	ivol(1.0 / (wg * mypow(2, tdim))),
+	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP),
+	ell_cols_size(mypow(3, tdim) * tdim * nn * tdim),
 	orig_ptr(this)
-{
-	INST_CONSTRUCT; // Initialize the Intrumentation
-	// GP list here
-	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
+{}
 
-	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
-	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+
+template<int tdim>
+micropp<tdim>::micropp(data *in, gp_t<tdim> *gp_l) :
+	data(*in), gp_list(gp_l), copy(true)
+{
+}
+
+
+template<int tdim>
+micropp<tdim>::micropp(const int _ngp, const int size[3],
+                       const int _micro_type,
+                       const double _micro_params[5],
+                       const material_t *_materials):
+	data(tdim, _ngp, size, _micro_type, _micro_params, _materials), copy(false)
+{
+	dint_vars_n = (double *) rrd_malloc(num_int_vars * sizeof(double));
+	dint_vars_k = (double *) rrd_malloc(num_int_vars * sizeof(double));
 
 	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
+
+	// GP list here
+	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
 
 	for (int gp = 0; gp < ngp; gp++) {
 
@@ -71,7 +86,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		         &(gp_list[gp]));
 	}
 
-	// Material list Here
+		// Material list Here
 	int nParams;
 	if (micro_type == 0) {
 		// mat 1 = matrix
@@ -138,7 +153,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 template <int tdim>
 micropp<tdim>::~micropp()
 {
-	if (this != orig_ptr)
+	if (copy)
 		return;
 
 	INST_DESTRUCT;
@@ -464,3 +479,4 @@ void micropp<tdim>::calc_fields(const double *old, double *u) const
 // Explicit instantiation
 template class micropp<2>;
 template class micropp<3>;
+

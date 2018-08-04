@@ -19,103 +19,99 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "tasks.hpp"
 #include "micro.hpp"
+#include "tasks.hpp"
 
 template <int tdim>
-void homogenize_conditional<tdim>(micropp<tdim> self,
-                            const int *ell_cols, const int ell_cols_size,
-                            const material_t *material_list, const int numMaterials,
-                            int *elem_type, int nelem,
-                            gp_t<tdim> *gp_ptr,
-                            double *u_k, double *u_n, const int nndim,
-                            const bool allocated, double *vars_n_old,
-                            double *vars_k_new, const int num_int_vars)
+void micropp<tdim>::homogenize_conditional(data in_data,
+                                           int *ell_cols, int ell_cols_size,
+                                           material_t *material_list, int numMaterials,
+                                           int *elem_type, int nelem,
+                                           gp_t<tdim> *gp_ptr,
+                                           double *u_k, double *u_n, int nndim,
+                                           bool allocated, double *vars_n_old,
+                                           double *vars_k_new, int num_int_vars)
 {
-//	constexpr int nvoi = self.nvoi;
-//	double *vold = vars_n_old, *vnew = vars_n_old;
-//	double *aux_old = nullptr, *aux_new = nullptr;
-//
-//	if (!allocated) {
-//		aux_old = (double *) calloc(num_int_vars, sizeof(double));
-//		aux_new = (double *) malloc(num_int_vars * sizeof(double));
-//
-//		vold = aux_old;
-//		vnew = aux_new;
-//	}
-//
-//	double *u_aux = (double *) malloc(nndim * sizeof(double));
-//	double *du_aux = (double *) malloc(nndim * sizeof(double));
-//	double *b = (double *) malloc(nndim * sizeof(double));
-//	const int ns[3] = { self.nx, self.ny, self.nz };
-//	ell_matrix A;
-//	ell_init(&A, self.ell_cols, self.dim, self.dim, ns, CG_MIN_ERR, CG_MAX_ITS);
-//
-//	// SIGMA (1 Newton-Raphson)
-//	memcpy(u_k, u_n, nndim * sizeof(double));
-//
-//	double nr_err;
-//	int nr_its = self.newton_raphson(gp_ptr->macro_strain, &A, gp_ptr->u_k,
-//	                                 b, du_aux, vold, &nr_err);
-//	gp_ptr->nr_its[0] = nr_its;
-//	gp_ptr->nr_err[0] = nr_err;
-//
-//	self.calc_ave_stress(u_k, vold, gp_ptr->macro_stress);
-//
-//	bool nl_flag = self.calc_vars_new(gp_ptr->u_k, vold, vnew);
-//
-//	if (nl_flag && !allocated) {
-//			allocate_gp(gp_ptr, gp_ptr->int_vars_n, num_int_vars);
-//			memcpy(gp_ptr->int_vars_k, vnew,
-//			       num_int_vars * sizeof(double));
-//	}
-//
-//	// CTAN (6 Newton-Raphson's)
-//	memcpy(u_aux, gp_ptr->u_k, nndim * sizeof(double));
-//	double eps_1[6], sig_0[6], sig_1[6];
-//	memcpy(sig_0, gp_ptr->macro_stress, nvoi * sizeof(double));
-//
-//	for (int i = 0; i < nvoi; ++i) {
-//
-//		memcpy(eps_1, gp_ptr->macro_strain, nvoi * sizeof(double));
-//		eps_1[i] += D_EPS_CTAN_AVE;
-//
-//		nr_its = self.newton_raphson(eps_1, &A, u_aux, b, du_aux, vold, &nr_err);
-//		gp_ptr->nr_its[i + 1] = nr_its;
-//		gp_ptr->nr_err[i + 1] = nr_err;
-//
-//		self.calc_ave_stress(u_aux, vold, sig_1);
-//
-//		for (int v = 0; v < nvoi; ++v)
-//			gp_ptr->macro_ctan[v * nvoi + i] = (sig_1[v] - sig_0[v]) / D_EPS_CTAN_AVE;
-//
-//	}
-//
-//	ell_free(&A);
-//	free(u_aux);
-//	free(du_aux);
-//	free(b);
-//	free(aux_old);
-//	free(aux_new);
+	double *vold = vars_n_old, *vnew = vars_n_old;
+	double *aux_old = nullptr, *aux_new = nullptr;
+
+	if (!allocated) {
+		aux_old = (double *) calloc(num_int_vars, sizeof(double));
+		aux_new = (double *) malloc(num_int_vars * sizeof(double));
+
+		vold = aux_old;
+		vnew = aux_new;
+	}
+
+	double *u_aux = (double *) malloc(nndim * sizeof(double));
+	double *du_aux = (double *) malloc(nndim * sizeof(double));
+	double *b = (double *) malloc(nndim * sizeof(double));
+	const int ns[3] = { nx, ny, nz };
+	ell_matrix A;
+	ell_init(&A, ell_cols, dim, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
+
+	// SIGMA (1 Newton-Raphson)
+	memcpy(u_k, u_n, nndim * sizeof(double));
+
+	double nr_err;
+	int nr_its = newton_raphson(gp_ptr->macro_strain, &A, gp_ptr->u_k,
+	                            b, du_aux, vold, &nr_err);
+	gp_ptr->nr_its[0] = nr_its;
+	gp_ptr->nr_err[0] = nr_err;
+
+	calc_ave_stress(u_k, vold, gp_ptr->macro_stress);
+
+	bool nl_flag = calc_vars_new(gp_ptr->u_k, vold, vnew);
+
+	if (nl_flag && !allocated) {
+			allocate_gp(gp_ptr, gp_ptr->int_vars_n, num_int_vars);
+			memcpy(gp_ptr->int_vars_k, vnew,
+			       num_int_vars * sizeof(double));
+	}
+
+	// CTAN (6 Newton-Raphson's)
+	memcpy(u_aux, gp_ptr->u_k, nndim * sizeof(double));
+	double eps_1[6], sig_0[6], sig_1[6];
+	memcpy(sig_0, gp_ptr->macro_stress, nvoi * sizeof(double));
+
+	for (int i = 0; i < nvoi; ++i) {
+
+		memcpy(eps_1, gp_ptr->macro_strain, nvoi * sizeof(double));
+		eps_1[i] += D_EPS_CTAN_AVE;
+
+		nr_its = newton_raphson(eps_1, &A, u_aux, b, du_aux, vold, &nr_err);
+		gp_ptr->nr_its[i + 1] = nr_its;
+		gp_ptr->nr_err[i + 1] = nr_err;
+
+		calc_ave_stress(u_aux, vold, sig_1);
+
+		for (int v = 0; v < nvoi; ++v)
+			gp_ptr->macro_ctan[v * nvoi + i] = (sig_1[v] - sig_0[v]) / D_EPS_CTAN_AVE;
+
+	}
+
+	ell_free(&A);
+	free(u_aux);
+	free(du_aux);
+	free(b);
+	free(aux_old);
+	free(aux_new);
 }
 
 
 template <int tdim>
-void homogenize_task(micropp<tdim> self,
-                     const int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<tdim> *gp_ptr,
-                     double *u_k, double *u_n, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars)
+void micropp<tdim>::homogenize_task(data in_data,
+                                    int *ell_cols, int ell_cols_size,
+                                    material_t *material_list, int numMaterials,
+                                    int *elem_type, int nelem,
+                                    gp_t<tdim> *gp_ptr,
+                                    double *u_k, double *u_n, int nndim,
+                                    double *vars_n_old, double *vars_k_new,
+                                    int num_int_vars)
 {
-	constexpr int nvoi = self.nvoi;
+	micropp<tdim> self(&in_data, gp_ptr);
 
 	if (gp_ptr->is_linear(self.ctan_lin, self.inv_tol) && (!gp_ptr->allocated)) {
-
-		/* This is a risky optimization and should be used with extreme
-		 * caution setting the variable <inv_tol> to a right and small value
-		 */
 
 		for (int i = 0; i < nvoi; ++i) {
 			gp_ptr->macro_stress[i] = 0.0;
@@ -135,78 +131,43 @@ void homogenize_task(micropp<tdim> self,
 			#pragma oss task in(ell_cols[0; ell_cols_size]) \
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
-				 \
-				firstprivate(self) \
+				firstprivate(in_data) \
 				inout(gp_ptr[0]) \
 				out(u_k[0; nndim]) \
 				inout(u_n[0; nndim]) \
 				inout(vars_n_old[0; num_int_vars]) \
 				inout(vars_k_new[0; num_int_vars])
-			homogenize_conditional(self,
+			homogenize_conditional(in_data,
+				ell_cols, ell_cols_size,
+				material_list, numMaterials,
+				elem_type, nelem,
+				gp_ptr,
+				u_k, u_n, nndim,
+				true, vars_n_old, vars_k_new, num_int_vars);
+
+		} else {
+			#pragma oss task in(ell_cols[0; ell_cols_size]) \
+				in(material_list[0; numMaterials]) \
+				in(elem_type[0; nelem]) \
+				 \
+				inout(gp_ptr[0]) \
+				out(u_k[0; nndim]) \
+				inout(u_n[0; nndim]) \
+				out(vars_n_old[0; num_int_vars]) \
+				out(vars_k_new[0; num_int_vars])
+			homogenize_conditional(in_data,
 			                       ell_cols, ell_cols_size,
 			                       material_list, numMaterials,
 			                       elem_type, nelem,
 			                       gp_ptr,
 			                       u_k, u_n, nndim,
-			                       true, vars_n_old, vars_k_new, num_int_vars);
+			                       false, vars_n_old, vars_k_new, num_int_vars);
 
-		} else {
-//			#pragma oss task in(ell_cols[0; ell_cols_size]) \
-//				in(material_list[0; numMaterials]) \
-//				in(elem_type[0; nelem]) \
-//				 \
-//				inout(gp_ptr[0]) \
-//				out(u_k[0; nndim]) \
-//				inout(u_n[0; nndim]) \
-//				weakout(vars_n_old[0; num_int_vars]) \
-//				weakout(vars_k_new[0; num_int_vars])
-//			homogenize_conditional(self,
-//			                       ell_cols, ell_cols_size,
-//			                       material_list, numMaterials,
-//			                       elem_type, nelem,
-//			                       gp_ptr,
-//			                       u_k, u_n, nndim,
-//			                       false, vars_n_old, vars_k_new, num_int_vars);
-//
 		}
 	}
 }
 
 
-template
-void homogenize_task<2>(micropp<2> self,
-                     const int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<2> *gp_ptr,
-                     double *u_k, double *u_n, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars);
-
-template
-void homogenize_task<3>(micropp<3> self,
-                     const int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<3> *gp_ptr,
-                     double *u_k, double *u_n, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars);
-
-template
-void homogenize_conditional<2>(micropp<2> self,
-                               const int *ell_cols, const int ell_cols_size,
-                               const material_t *material_list, const int numMaterials,
-                               int *elem_type, int nelem,
-                               gp_t<2> *gp_ptr,
-                               double *u_k, double *u_n, const int nndim,
-                               const bool allocated, double *vars_n_old,
-                               double *vars_k_new, const int num_int_vars);
-
-template
-void homogenize_conditional<3>(micropp<3> self,
-                            const int *ell_cols, const int ell_cols_size,
-                            const material_t *material_list, const int numMaterials,
-                            int *elem_type, int nelem,
-                            gp_t<3> *gp_ptr,
-                            double *u_k, double *u_n, const int nndim,
-                            const bool allocated, double *vars_n_old,
-                            double *vars_k_new, const int num_int_vars);
+// Explicit instantiation
+template class micropp<2>;
+template class micropp<3>;

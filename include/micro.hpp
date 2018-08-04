@@ -56,33 +56,24 @@
 
 using namespace std;
 
-template <int tdim>
-class micropp {
-
-	private:
-		// Variables (static constexpr)
-		static constexpr int dim = tdim;                  // 2, 3
-		static constexpr int npe = mypow(2, dim);         // 4, 8
-		static constexpr int nvoi = dim * (dim + 1) / 2;  // 3, 6
-
+struct data
+{
 		// Constants only vars
-		const int ngp, nx, ny, nz, nn, nndim;
-		const int nex, ney, nez, nelem;
-		const double lx, ly, lz;
-		const double dx, dy, dz;
-		const double vol_tot;
-		const double special_param, inv_tol, wg, ivol;
+		int ngp, nx, ny, nz, nn, nndim;
+		int nex, ney, nez, nelem;
+		double lx, ly, lz;
+		double dx, dy, dz;
+		double vol_tot;
+		double special_param, inv_tol, wg, ivol;
 
-		const int micro_type, num_int_vars;
+		int micro_type, num_int_vars;
 
-		const micropp *orig_ptr;
+		void *orig_ptr;
 
-		gp_t<tdim> *gp_list;
+		double ctan_lin[36]; // nvoi * nvoi
 
 		// Other variables
 		bool output_files_header;
-
-		double ctan_lin[nvoi * nvoi];
 
 		int numMaterials;
 		material_t *material_list;
@@ -93,23 +84,40 @@ class micropp {
 
 		// Nanos stuff
 		int *ell_cols;
-		const int ell_cols_size;
+		int ell_cols_size;
 
 		double *du_n, *du_k, *dint_vars_n, *dint_vars_k;
 
+		data(const int tdim, const int _ngp, const int size[3],
+		     const int _micro_type,
+		     const double _micro_params[5],
+		     const material_t *_materials);
+};
+
+template <int tdim>
+class micropp : private data {
+
 	protected:
+		// Variables (static constexpr)
+		static constexpr int dim = tdim;                  // 2, 3
+		static constexpr int npe = mypow(2, dim);         // 4, 8
+		static constexpr int nvoi = dim * (dim + 1) / 2;  // 3, 6
+		const bool copy;
+
+		gp_t<tdim> *gp_list;
+
 		// Common
 		void calc_ctan_lin();
 
 		material_t get_material(const int e) const;
 
 		void get_strain(const double *u, int gp, double strain_gp[nvoi],
-				int ex, int ey, int ez = 0) const;
+		                int ex, int ey, int ez = 0) const;
 
 		void get_elem_nodes(int n[npe], int ex, int ey, int ez = 0) const;
 
 		void get_elem_displ(const double *u, double elem_disp[npe * dim],
-				int ex, int ey, int ez = 0) const;
+		                    int ex, int ey, int ez = 0) const;
 
 		void get_stress(int gp, const double eps[nvoi], const double *old,
 		                double stress_gp[nvoi],
@@ -164,8 +172,8 @@ class micropp {
 			double ctan[6][6]) const;
 
 		bool plastic_evolute(const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double eps_p_new[6], double *alpha_new) const;
+		                     const double eps_p_old[6], double alpha_old,
+		                     double eps_p_new[6], double *alpha_new) const;
 
 		void isolin_get_ctan(const material_t *material, double ctan[6][6]) const;
 
@@ -176,28 +184,33 @@ class micropp {
 		void isolin_get_stress(const material_t *material, const double eps[6],
 		                       double stress[6]) const;
 
-		friend void homogenize_task<tdim>(micropp<tdim> self,
-                     const int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<tdim> *gp_ptr,
-                     double *u_k, double *u_n, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars);
 
-		friend void homogenize_conditional<tdim>(micropp<tdim> self,
-                            const int *ell_cols, const int ell_cols_size,
-                            const material_t *material_list, const int numMaterials,
-                            int *elem_type, int nelem,
-                            gp_t<tdim> *gp_ptr,
-                            double *u_k, double *u_n, const int nndim,
-                            const bool allocated, double *vars_n_old,
-                            double *vars_k_new, const int num_int_vars);
+		void homogenize_conditional(data self,
+		                            int *ell_cols, int ell_cols_size,
+		                            material_t *material_list, int numMaterials,
+		                            int *elem_type, int nelem,
+		                            gp_t<tdim> *gp_ptr,
+		                            double *u_k, double *u_n, int nndim,
+		                            bool allocated, double *vars_n_old,
+		                            double *vars_k_new, int num_int_vars);
+
+
+		void homogenize_task(data self,
+		                     int *ell_cols, int ell_cols_size,
+		                     material_t *material_list, int numMaterials,
+		                     int *elem_type, int nelem,
+		                     gp_t<tdim> *gp_ptr,
+		                     double *u_k, double *u_n, int nndim,
+		                     double *vars_n_old, double *vars_k_new, int num_int_vars);
+
 
 	public:
 		micropp() = delete;
 
 		micropp(const int ngp, const int size[3], const int micro_type,
 		        const double *micro_params, const material_t *materials);
+
+		micropp(data *in, gp_t<tdim> *gp_l);
 
 		~micropp();
 
@@ -213,5 +226,8 @@ class micropp {
 		void update_vars();
 		void print_info() const;
 };
+
+
+
 
 #endif // MICRO_HPP
