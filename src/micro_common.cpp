@@ -57,8 +57,8 @@ data::data(const int tdim, const int _ngp, const int size[3],
 template<int tdim>
 micropp<tdim>::micropp(data *in, gp_t<tdim> *gp_l) :
 	data(*in), gp_list(gp_l), copy(true)
-{
-}
+{}
+
 
 
 template<int tdim>
@@ -68,8 +68,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
                        const material_t *_materials):
 	data(tdim, _ngp, size, _micro_type, _micro_params, _materials), copy(false)
 {
-	dint_vars_n = (double *) rrd_malloc(num_int_vars * sizeof(double));
-	dint_vars_k = (double *) rrd_malloc(num_int_vars * sizeof(double));
+	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
 
 	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
@@ -81,8 +81,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 
 		d_set_gp(&(dint_vars_n[num_int_vars * gp]),
 		         &(dint_vars_k[num_int_vars * gp]),
-		         &(du_n[nndim *gp]),
-		         &(du_k[nndim *gp]), nndim,
+		         &(du_n[nndim * gp]),
+		         &(du_k[nndim * gp]),nndim,
 		         &(gp_list[gp]));
 	}
 
@@ -155,8 +155,6 @@ micropp<tdim>::~micropp()
 {
 	if (copy)
 		return;
-
-	INST_DESTRUCT;
 
 	rrd_free(elem_stress);
 	rrd_free(elem_strain);

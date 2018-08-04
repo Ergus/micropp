@@ -55,8 +55,6 @@ void micropp<tdim>::get_macro_ctan(const int gp_id, double *macro_ctan) const
 template <int tdim>
 void micropp<tdim>::homogenize()
 {
-	INST_START;
-
 	for (int igp = 0; igp < ngp; ++igp) {
 		gp_t<tdim> * const gp_ptr = &gp_list[igp];
 

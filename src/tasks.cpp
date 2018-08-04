@@ -64,9 +64,9 @@ void micropp<tdim>::homogenize_conditional(data in_data,
 	bool nl_flag = calc_vars_new(gp_ptr->u_k, vold, vnew);
 
 	if (nl_flag && !allocated) {
-			allocate_gp(gp_ptr, gp_ptr->int_vars_n, num_int_vars);
-			memcpy(gp_ptr->int_vars_k, vnew,
-			       num_int_vars * sizeof(double));
+		allocate_gp(gp_ptr, gp_ptr->int_vars_n, num_int_vars);
+		memcpy(gp_ptr->int_vars_k, vnew,
+		       num_int_vars * sizeof(double));
 	}
 
 	// CTAN (6 Newton-Raphson's)
