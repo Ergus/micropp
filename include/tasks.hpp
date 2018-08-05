@@ -81,4 +81,5 @@ void d_set_gp(double *const _int_vars_n, double *const _int_vars_k,
 	_out[0].init(_int_vars_n, _int_vars_k, _u_n, _u_k, nndim);
 }
 
+
 #endif //TASKS_HPP

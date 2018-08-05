@@ -178,6 +178,25 @@ class micropp {
 		void isolin_get_stress(const material_t *material, const double eps[6],
 		                       double stress[6]) const;
 
+
+		static void homogenize_weak_task(micropp self,
+		                          int *ell_cols, const int ell_cols_size,
+		                          const material_t *material_list, const int numMaterials,
+		                          int *elem_type, int nelem,
+		                          gp_t<tdim> *gp_ptr,
+		                          double *u_k, double *u_n, int nndim,
+		                          double *vars_n_old, double *vars_k_new, int num_int_vars);
+
+
+		static void homogenize_conditional_task(micropp self,
+		                                 int *ell_cols, const int ell_cols_size,
+		                                 const material_t *material_list, const int numMaterials,
+		                                 int *elem_type, int nelem,
+		                                 gp_t<tdim> *gp_ptr,
+		                                 double *u_k, double *u_n, int nndim,
+		                                 const bool allocated, double *vars_n_old,
+		                                 double *vars_k_new, int num_int_vars);
+
 	public:
 		micropp() = delete;
 
