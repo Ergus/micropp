@@ -105,6 +105,12 @@ class gp_t {
 
 			return (fabs(inv) < _inv_tol);
 		}
+
+		void print()
+		{
+			printf("u_n: %p u_k: %p v_n: %p v_k: %p\n",
+			       u_n, u_k, int_vars_n, int_vars_k);
+		}
 };
 
 #endif

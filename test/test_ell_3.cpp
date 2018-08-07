@@ -50,7 +50,8 @@ int main (int argc, char *argv[])
 	const int nfield = 1;
 
 	ell_matrix A1;
-	int *cols = ell_init_cols(nfield, dim, ns);
+	int *cols;
+	ell_init_cols(nfield, dim, ns, cols);
 
 	double cg_err;
 

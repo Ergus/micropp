@@ -21,16 +21,14 @@ k *  You should have received a copy of the GNU General Public License
 
 #include "micro.hpp"
 
-template<int tdim>
-micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
-					   const double _micro_params[5],
-					   const material_t *_materials):
+data::data(const int tdim, const int _ngp, const int size[3], const int _micro_type,
+           const double _micro_params[5], const material_t *_materials):
 	ngp(_ngp),
 	nx(size[0]), ny(size[1]),
 	nz((tdim == 3) ? size[2] : 1),
 
 	nn(nx * ny * nz),
-	nndim(nn * dim),
+	nndim(nn * tdim),
 
 	nex(nx - 1), ney(ny - 1),
 	nez((tdim == 3) ? (nz - 1) : 1),
@@ -43,32 +41,31 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 
 	special_param(_micro_params[3]), inv_tol(_micro_params[4]),
 
-	wg(((tdim == 3) ? dx * dy * dz : dx * dy) / npe),
+	wg(((tdim == 3) ? dx * dy * dz : dx * dy) / mypow(2, tdim)),
 	vol_tot((tdim == 3) ? lx * ly * lz : lx * ly),
-	ivol(1.0 / (wg * npe)),
-	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP), 
-	ell_cols_size(mypow(3, dim) * dim * nn * dim),
-	orig_ptr(this)
+	ivol(1.0 / (wg * mypow(2, tdim))),
+	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP),
+	ell_cols_size(mypow(3, tdim) * tdim * nn * tdim)
+{
+	output_files_header = false;
+}
+
+
+template<int tdim>
+micropp<tdim>::micropp(data *in, gp_t<tdim> *list) :
+	data(*in), gp_list(list), copy(true)
+{}
+
+
+template<int tdim>
+micropp<tdim>::micropp(const int _ngp, const int size[3],
+                       const int _micro_type,
+                       const double _micro_params[5],
+                       const material_t *_materials) :
+	data(tdim, _ngp, size, _micro_type, _micro_params, _materials),
+	copy(false)
 {
 	INST_CONSTRUCT; // Initialize the Intrumentation
-	// GP list here
-	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
-
-	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
-	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
-
-	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
-	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
-
-	for (int gp = 0; gp < ngp; gp++) {
-
-		d_set_gp(&(dint_vars_n[num_int_vars * gp]),
-		         &(dint_vars_k[num_int_vars * gp]),
-		         &(du_n[nndim *gp]),
-		         &(du_k[nndim *gp]), nndim,
-		         &(gp_list[gp]));
-	}
-
 	// Material list Here
 	int nParams;
 	if (micro_type == 0) {
@@ -83,38 +80,85 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 		nParams = 5;
 	}
 
-	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
-	{
-		for (int i = 0; i < numMaterials; ++i)
-			d_set(_materials[i], &material_list[i]);
+	// Common permanent arrays
+	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
 
-	}
+	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
 
 	elem_type = (int *) rrd_malloc(nelem * sizeof(int));
-	for (int ez = 0; ez < nez; ++ez) {
-		for (int ey = 0; ey < ney; ++ey) {
-			for (int ex = 0; ex < nex; ++ex) {
-				const int e_i = glo_elem(ex, ey, ez);
-				int type = get_elem_type(ex, ey, ez);
-				d_set(type, &elem_type[e_i]);
-			}
-		}
-	}
+
+	// Shared arrays for gp
+	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
+
+	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
+	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
+
 
 	elem_stress = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 	elem_strain = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 
-	output_files_header = false;
+	// gp_list
+	for (int gp = 0; gp < ngp; gp++) {
 
-	const int ns[3] = { nx, ny, nz };
-	// This needs to be released manually!!
-	ell_cols = ell_init_cols(dim, dim, ns);
+		gp_t<tdim> *gp_ptr = &gp_list[gp];
 
+		double *tv_n = &dint_vars_n[num_int_vars * gp];
+		double *tv_k = &dint_vars_k[num_int_vars * gp];
+		double *tu_n = &du_n[nndim *gp];
+		double *tu_k = &du_k[nndim *gp];
+		int tnndim = nndim;
+
+		#pragma oss task out(gp_ptr[0]) out(tu_n[0; tnndim]) label(init_gp)
+		{
+			set_gp<tdim>(tv_n, tv_k, tu_n, tu_k, nndim, gp_ptr);
+			printf("%d %p ", gp, gp_ptr);
+			gp_ptr->print();
+		}
+	}
+
+	for (int i = 0; i < numMaterials; ++i) {
+		material_t *material_ptr = &material_list[i];
+
+		#pragma oss task out(material_ptr[0]) label(init_material)
+		*material_ptr = _materials[i];
+
+	}
+
+
+	// Type
+	for (int ez = 0; ez < nez; ++ez) {
+		for (int ey = 0; ey < ney; ++ey) {
+			for (int ex = 0; ex < nex; ++ex) {
+				const int e_i = glo_elem(ex, ey, ez);
+
+				int *type_ptr = &elem_type[e_i];
+				int type = get_elem_type(ex, ey, ez);
+
+				#pragma oss task out(type_ptr[0]) label(init_type)
+				*type_ptr = type;
+			}
+		}
+	}
+
+
+	// Solver
+	{
+		ell_cols = (int *) ell_malloc_cols(dim, dim, size, &ell_cols_size);
+
+		int *ell_cols_ptr = ell_cols;
+		int ell_cols_size_tmp = ell_cols_size;
+
+		// This needs to be released manually!!
+		#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
+		ell_init_cols(tdim, tdim, size, ell_cols_ptr);
+	}
 
 	#pragma oss taskwait
 	calc_ctan_lin();
 
 	ofstream file;
+
 	file.open("micropp_convergence.dat");
 	file.close();
 	file.open("micropp_eps_sig_ctan.dat");
@@ -126,8 +170,10 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 template <int tdim>
 micropp<tdim>::~micropp()
 {
-	if (this != orig_ptr)
+	if (copy)
 		return;
+
+	#pragma oss taskwait
 
 	INST_DESTRUCT;
 
@@ -142,6 +188,7 @@ micropp<tdim>::~micropp()
 	rrd_free(du_k);
 	rrd_free(dint_vars_n);
 	rrd_free(dint_vars_k);
+	rrd_free(ell_cols);
 }
 
 

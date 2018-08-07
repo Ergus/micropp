@@ -23,12 +23,26 @@
 
 #include <cmath>
 
+#include "tasks.hpp"
 #include "ell.hpp"
 #include "instrument.hpp"
 
 using namespace std;
 
-int *ell_init_cols(const int nfield, const int dim, const int ns[3])
+
+int *ell_malloc_cols(const int nfield, const int dim, const int ns[3], int *size)
+{
+	const int nn = (dim == 2) ? ns[0] * ns[1] : ns[0] * ns[1] * ns[2];
+	const int num_nodes = (dim == 2) ? 9 : 27;
+	const int nnz = num_nodes * nfield;
+	const int nrow = nn * nfield;
+
+	*size = nnz * nrow;
+
+	return (int *) rrd_malloc((*size) * sizeof(int));
+}
+
+void ell_init_cols(const int nfield, const int dim, const int ns[3], int *cols)
 {
 	const int nx = ns[0];
 	const int ny = ns[1];
@@ -38,7 +52,6 @@ int *ell_init_cols(const int nfield, const int dim, const int ns[3])
 	const int num_nodes = (dim == 2) ? 9 : 27;
 	const int nnz = num_nodes * nfield;
 	const int nrow = nn * nfield;
-	int *cols = (int *) malloc(nnz * nrow * sizeof(int));
 
 	if (dim == 2) {
 		for (int fi = 0; fi < nfield; ++fi) {
@@ -115,7 +128,6 @@ int *ell_init_cols(const int nfield, const int dim, const int ns[3])
 			}
 		}
 	}
-	return cols;
 }
 
 void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,

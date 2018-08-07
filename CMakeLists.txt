@@ -13,7 +13,7 @@ if (NANOS6)
 	set(CMAKE_Fortran_COMPILER ${MFC} CACHE INTERNAL "" FORCE)
 	set(CMAKE_C_COMPILER ${MCC} CACHE INTERNAL "" FORCE)
 
-	add_definitions(--ompss-2 -DNANOS6)
+	add_definitions(--ompss-2 -k -DNANOS6)
 	set(CMAKE_EXE_LINKER_FLAGS --ompss-2)
   else()
 	message(FATAL_ERROR "Mercurium not found")

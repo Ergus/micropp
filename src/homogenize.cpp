@@ -58,24 +58,35 @@ void micropp<tdim>::homogenize()
 {
 	INST_START;
 
+	const int tnvoi = nvoi;
+
 	for (int gp = 0; gp < ngp; ++gp) {
 		gp_t<tdim> * const gp_ptr = &gp_list[gp];
 
-		homogenize_weak_task(*this,
+		double *tv_n = &(dint_vars_n[num_int_vars * gp]);
+		double *tv_k = &(dint_vars_k[num_int_vars * gp]);
+		double *tu_n = &(du_n[nndim *gp]);
+		double *tu_k = &(du_k[nndim *gp]);
+
+		printf("%d %p %p\n", gp, gp_ptr, gp_ptr->u_k);
+
+		homogenize_weak_task(*this, tnvoi,
 		                     ell_cols, ell_cols_size,
 		                     material_list, numMaterials,
 		                     elem_type, nelem,
 		                     gp_ptr,
-		                     gp_ptr->u_k, gp_ptr->u_n, nndim,
-		                     gp_ptr->int_vars_n, gp_ptr->int_vars_k, num_int_vars);
+		                     tu_n, tu_k, nndim,
+		                     tv_n, tv_k, num_int_vars);
 	}
+	#pragma oss taskwait
 }
 
 template <int tdim>
 void micropp<tdim>::update_vars()
 {
-	for (int igp = 0; igp < ngp; ++igp)
-		gp_list[igp].update_vars();
+	for (int gp = 0; gp < ngp; ++gp) {
+		gp_list[gp].update_vars();
+	}
 }
 
 // Explicit instantiation
