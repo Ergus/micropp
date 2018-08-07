@@ -23,24 +23,18 @@
 
 template <int tdim>
 void homogenize_conditional_task(struct data self_data, int nvoi,
-                            int *ell_cols, const int ell_cols_size,
-                            const material_t *material_list, const int numMaterials,
-                            int *elem_type, int nelem,
-                            gp_t<tdim> *gp_ptr,
-                            double *u_n, double *u_k, int nndim,
-                            const bool allocated,
-                            double *vars_n_old, double *vars_k_new, int num_int_vars)
+                                 int *ell_cols, const int ell_cols_size,
+                                 const material_t *material_list, const int numMaterials,
+                                 int *elem_type, int nelem,
+                                 gp_t<tdim> *gp_ptr,
+                                 int nndim, int num_int_vars,
+                                 const bool allocated)
 {
 	dprintf("Nanos cluster %d/%d \n", get_node_id(), get_nodes_nr());
 
-	printf("gp: %p %p != %p\n", gp_ptr, gp_ptr->u_k, u_k);
-
 	micropp<tdim> self(&self_data, gp_ptr);
 
-	assert(gp_ptr->u_k == u_k);
-	assert(gp_ptr->u_n == u_n);
-
-	double *vold = vars_n_old, *vnew = vars_k_new;
+	double *vold = nullptr, *vnew = nullptr;
 	double *aux_old = nullptr, *aux_new = nullptr;
 
 	if (!allocated) {
@@ -49,6 +43,9 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 
 		vold = aux_old;
 		vnew = aux_new;
+	} else {
+		vold = gp_ptr->int_vars_n;
+		vnew = gp_ptr->int_vars_k;
 	}
 
 	double *u_aux = (double *) malloc(nndim * sizeof(double));
@@ -111,13 +108,11 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 
 
 template <int tdim>
-void homogenize_weak_task(struct data self, int nvoi,
-                     int *ell_cols, const int ell_cols_size,
-                     const material_t *material_list, const int numMaterials,
-                     int *elem_type, int nelem,
-                     gp_t<tdim> *gp_ptr,
-                     double *u_n, double *u_k, int nndim,
-                     double *vars_n_old, double *vars_k_new, int num_int_vars)
+void homogenize_weak_task(data self, int nvoi,
+                          int *ell_cols, const int ell_cols_size,
+                          const material_t *material_list, const int numMaterials,
+                          int *elem_type, int nelem,
+                          gp_t<tdim> *gp_ptr, int nndim, int num_int_vars)
 {
 
 	if (gp_ptr->is_linear(self.ctan_lin, self.inv_tol, -1.0e10)
@@ -133,33 +128,37 @@ void homogenize_weak_task(struct data self, int nvoi,
 				gp_ptr->macro_stress[i] += self.ctan_lin[i * nvoi + j]
 					*gp_ptr->macro_strain[j];
 		}
+
 		memcpy(gp_ptr->macro_ctan, self.ctan_lin, nvoi * nvoi * sizeof(double));
 		memset(gp_ptr->nr_its, 0, (1 + nvoi) * sizeof(double));
 		memset(gp_ptr->nr_err, 0, (1 + nvoi) * sizeof(double));
 
 	} else {
 
+		double *tv_n = gp_ptr->int_vars_n;
+		double *tv_k = gp_ptr->int_vars_k;
+		double *tu_n = gp_ptr->u_n;
+		double *tu_k = gp_ptr->u_k;
+
 		if (gp_ptr->allocated) {
 			#pragma oss task in(ell_cols[0; ell_cols_size]) \
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr[0]) \
-				inout(u_n[0; nndim]) \
-				inout(u_k[0; nndim]) \
-				inout(vars_n_old[0; num_int_vars]) \
-				inout(vars_k_new[0; num_int_vars])
+				inout(gp_ptr) \
+				inout(tu_n[0; nndim]) \
+				inout(tu_k[0; nndim]) \
+				inout(tv_k[0; num_int_vars]) \
+				inout(tv_k[0; num_int_vars])
 			{
-				printf("CALLER: %p (%p) ", gp_ptr, u_k);
+				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
 				gp_ptr->print();
 			homogenize_conditional_task<tdim>(self, nvoi,
 			                                  ell_cols, ell_cols_size,
 			                                  material_list, numMaterials,
 			                                  elem_type, nelem,
-			                                  gp_ptr,
-			                                  u_n, u_k, nndim,
-			                                  true,
-			                                  vars_n_old, vars_k_new, num_int_vars);
+			                                  gp_ptr, nndim, num_int_vars,
+			                                  true);
 
 
 			}
@@ -169,22 +168,20 @@ void homogenize_weak_task(struct data self, int nvoi,
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr[0]) \
-				inout(u_n[0; nndim]) \
-				inout(u_k[0; nndim]) \
-				inout(vars_n_old[0; num_int_vars]) \
-				inout(vars_k_new[0; num_int_vars])
+				inout(gp_ptr) \
+				inout(tu_n[0; nndim]) \
+				inout(tu_k[0; nndim]) \
+				inout(tv_k[0; num_int_vars]) \
+				inout(tv_k[0; num_int_vars])
 			{
-				printf("CALLER: %p (%p) ", gp_ptr, u_k);
+				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
 				gp_ptr->print();
 			homogenize_conditional_task<tdim>(self, nvoi,
 			                                  ell_cols, ell_cols_size,
 			                                  material_list, numMaterials,
 			                                  elem_type, nelem,
-			                                  gp_ptr,
-			                                  u_n, u_k, nndim,
-			                                  false,
-			                                  vars_n_old, vars_k_new, num_int_vars);
+			                                  gp_ptr, nndim, num_int_vars,
+			                                  false);
 			}
 		}
 	}
@@ -195,39 +192,36 @@ template class micropp<2>;
 template class micropp<3>;
 
 template
-void homogenize_conditional_task<2>(struct data self, int nvoi,
+void homogenize_conditional_task<2>(struct data self, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
-                                 int *elem_type, int nelem,
+                                 int *elem_type, const int nelem,
                                  gp_t<2> *gp_ptr,
-                                 double *u_k, double *u_n, int nndim,
-                                 const bool allocated, double *vars_n_old,
-                                 double *vars_k_new, int num_int_vars);
+                                 const int nndim, const int num_int_vars,
+                                 const bool allocated);
+
 
 template
-void homogenize_conditional_task<3>(struct data self, int nvoi,
+void homogenize_conditional_task<3>(struct data self, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
-                                 int *elem_type, int nelem,
+                                 int *elem_type, const int nelem,
                                  gp_t<3> *gp_ptr,
-                                 double *u_k, double *u_n, int nndim,
-                                 const bool allocated, double *vars_n_old,
-                                 double *vars_k_new, int num_int_vars);
+                                 const int nndim, const int num_int_vars,
+                                 const bool allocated);
+
 
 template
-void homogenize_weak_task<2>(data self,int nvoi,
+void homogenize_weak_task<2>(data self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
-                          gp_t<2> *gp_ptr,
-                          double *u_k, double *u_n, int nndim,
-                          double *vars_n_old, double *vars_k_new, int num_int_vars);
+                          gp_t<2> *gp_ptr, int nndim, int num_int_vars);
 
 template
-void homogenize_weak_task<3>(data self,int nvoi,
+void homogenize_weak_task<3>(data self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
-                          gp_t<3> *gp_ptr,
-                          double *u_k, double *u_n, int nndim,
-                          double *vars_n_old, double *vars_k_new, int num_int_vars);
+                          gp_t<3> *gp_ptr, int nndim, int num_int_vars);
+

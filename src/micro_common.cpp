@@ -94,7 +94,6 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 
-
 	elem_stress = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 	elem_strain = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 
@@ -109,19 +108,16 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		double *tu_k = &du_k[nndim *gp];
 		int tnndim = nndim;
 
-		#pragma oss task out(gp_ptr[0]) out(tu_n[0; tnndim]) label(init_gp)
-		{
-			set_gp<tdim>(tv_n, tv_k, tu_n, tu_k, nndim, gp_ptr);
-			printf("%d %p ", gp, gp_ptr);
-			gp_ptr->print();
-		}
+		printf("%p %p %p %p %p\n", gp_ptr, tv_n, tv_k, tu_n, tu_k);
+
+		set_gp<tdim>(tv_n, tv_k, tu_n, tu_k, tnndim, gp_ptr);
+
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
 
-		#pragma oss task out(material_ptr[0]) label(init_material)
-		*material_ptr = _materials[i];
+		set_val<material_t>(_materials[i], material_ptr);
 
 	}
 
@@ -135,26 +131,24 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 				int *type_ptr = &elem_type[e_i];
 				int type = get_elem_type(ex, ey, ez);
 
-				#pragma oss task out(type_ptr[0]) label(init_type)
-				*type_ptr = type;
+				set_val<int>(type, type_ptr);
 			}
 		}
 	}
 
 
-	// Solver
-	{
-		ell_cols = (int *) ell_malloc_cols(dim, dim, size, &ell_cols_size);
+	ell_cols = (int *) ell_malloc_cols(dim, dim, size, &ell_cols_size);
 
-		int *ell_cols_ptr = ell_cols;
-		int ell_cols_size_tmp = ell_cols_size;
+	int *ell_cols_ptr = ell_cols;
+	int ell_cols_size_tmp = ell_cols_size;
 
-		// This needs to be released manually!!
-		#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
-		ell_init_cols(tdim, tdim, size, ell_cols_ptr);
-	}
+	// This needs to be released manually!!
+	#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
+	ell_init_cols(tdim, tdim, size, ell_cols_ptr);
+
 
 	#pragma oss taskwait
+
 	calc_ctan_lin();
 
 	ofstream file;

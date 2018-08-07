@@ -63,20 +63,38 @@ void micropp<tdim>::homogenize()
 	for (int gp = 0; gp < ngp; ++gp) {
 		gp_t<tdim> * const gp_ptr = &gp_list[gp];
 
+		int *ell_cols_ptr = ell_cols;
+		int ell_cols_size_tmp = ell_cols_size;
+
+		material_t *material_ptr = material_list;
+		int numMaterials_tmp = numMaterials;
+
+		int *elem_type_ptr = elem_type;
+		int nelem_tmp = nelem;
+
 		double *tv_n = &(dint_vars_n[num_int_vars * gp]);
 		double *tv_k = &(dint_vars_k[num_int_vars * gp]);
 		double *tu_n = &(du_n[nndim *gp]);
 		double *tu_k = &(du_k[nndim *gp]);
+		int nndim_tmp = nndim;
+		int num_int_vars_tmp = num_int_vars;
 
 		printf("%d %p %p\n", gp, gp_ptr, gp_ptr->u_k);
 
+		#pragma oss task in(ell_cols_ptr[0; ell_cols_size_tmp]) \
+			in(material_ptr[0; numMaterials_tmp]) \
+			in(elem_type_ptr[0; nelem_tmp]) \
+			 \
+			inout(gp_ptr[0]) \
+			weakinout(tu_n[0; nndim_tmp]) \
+			weakinout(tu_k[0; nndim_tmp]) \
+			weakinout(tv_n[0; num_int_vars_tmp]) \
+			weakinout(tv_k[0; num_int_vars_tmp])
 		homogenize_weak_task(*this, tnvoi,
-		                     ell_cols, ell_cols_size,
-		                     material_list, numMaterials,
-		                     elem_type, nelem,
-		                     gp_ptr,
-		                     tu_n, tu_k, nndim,
-		                     tv_n, tv_k, num_int_vars);
+		                     ell_cols_ptr, ell_cols_size_tmp,
+		                     material_ptr, numMaterials_tmp,
+		                     elem_type_ptr, nelem_tmp,
+		                     gp_ptr, nndim_tmp, num_int_vars_tmp);
 	}
 	#pragma oss taskwait
 }

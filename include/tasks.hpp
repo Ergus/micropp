@@ -71,14 +71,25 @@ static inline void rrd_free(void *in)
 
 #endif
 
-
+#pragma oss task out(_out[0]) out(tu_n[0; tnndim]) label(init_gp)
 template <int tdim>
 void set_gp(double *const _int_vars_n, double *const _int_vars_k,
-              double *const _u_n, double *const _u_k, int nndim,
+              double *const tu_n, double *const tu_k, int tnndim,
               gp_t<tdim> *_out)
 {
-       _out[0].init(_int_vars_n, _int_vars_k, _u_n, _u_k, nndim);
+	dprintf("Node: %d set(%p)\n", get_node_id(), _out);
+	_out[0].init(_int_vars_n, _int_vars_k, tu_n, tu_k, tnndim);
 }
+
+
+#pragma oss task out(_out[0])
+template <typename T>
+void set_val(T _in, T *_out)
+{
+	_out[0] = _in;
+}
+
+
 
 
 template <int tdim>
@@ -87,27 +98,16 @@ void homogenize_conditional_task(struct data self, int nvoi,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
                                  gp_t<tdim> *gp_ptr,
-                                 double *u_k, double *u_n, int nndim,
-                                 const bool allocated, double *vars_n_old,
-                                 double *vars_k_new, int num_int_vars);
+                                 int nndim, int num_int_vars,
+                                 const bool allocated);
 
 
-#pragma oss task in(ell_cols[0; ell_cols_size]) \
-	in(material_list[0; numMaterials]) \
-	in(elem_type[0; nelem]) \
-	 \
-	inout(gp_ptr[0]) \
-	inout(u_n[0; nndim]) \
-	inout(u_k[0; nndim]) \
-	inout(vars_n_old[0; num_int_vars]) \
-	inout(vars_k_new[0; num_int_vars])
 template <int tdim>
 void homogenize_weak_task(data self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
-                          gp_t<tdim> *gp_ptr,
-                          double *u_k, double *u_n, int nndim,
-                          double *vars_n_old, double *vars_k_new, int num_int_vars);
+                          gp_t<tdim> *gp_ptr, int nndim, int num_int_vars);
+
 
 #endif //TASKS_HPP

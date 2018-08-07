@@ -61,7 +61,7 @@ class gp_t {
 
 			inv_max = -1.0;
 
-			memset(u_n, 0, nndim * sizeof(double));
+			// memset(u_n, 0, nndim * sizeof(double));
 		}
 
 		~gp_t()
