@@ -35,24 +35,21 @@ void micropp<tdim>::output(int time_step, int gp_id)
 
 	gp_t<tdim> * const gp_ptr = &gp_list[gp_id];
 
-	double *vold, *vnew, *aux_old = nullptr, *aux_new = nullptr;
+	double *vnew, *aux_new = nullptr;
 	if (!gp_ptr->allocated) {
 
-		aux_old = (double *) calloc(num_int_vars, sizeof(double));
 		aux_new = (double *) malloc(num_int_vars * sizeof(double));
 
-		vold = aux_old;
 		vnew = aux_new;
 
 	} else {
-		vold = gp_ptr->int_vars_n;
 		vnew = gp_ptr->int_vars_k;
 	}
 
 	double *u = gp_ptr->u_k;
 
-	calc_fields(vold, u);
-	write_vtu(vold, u, time_step, gp_id);
+	calc_fields(vnew, u);
+	write_vtu(vnew, u, time_step, gp_id);
 }
 
 
@@ -248,7 +245,7 @@ void micropp<tdim>::write_info_files()
 	for (int igp = 0 ; igp < ngp; ++igp) {
 		for (int i = 0; i < num_int_vars; ++i) {
 			if (gp_list[igp].allocated)
-				file << setw(14) << gp_list[igp].int_vars_n[i] << " ";
+				file << setw(14) << gp_list[igp].int_vars_k[i] << " ";
 			else
 				file << setw(14) << 0.0 << " ";
 		}

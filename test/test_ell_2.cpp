@@ -54,9 +54,10 @@ int main (int argc, char *argv[])
 	const int ns[3] = { nx, ny, nz };
 	const int nfield = 1;
 	const int dim = 3;
+	int size;
 
 	ell_matrix A1;
-	int *cols;
+	int *cols = ell_malloc_cols( nfield,  dim,  ns, &size);
 	ell_init_cols(nfield, dim, ns, cols);
 	ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 20);
 

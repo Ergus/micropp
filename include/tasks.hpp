@@ -71,14 +71,13 @@ static inline void rrd_free(void *in)
 
 #endif
 
-#pragma oss task out(_out[0]) out(tu_n[0; tnndim]) label(init_gp)
+#pragma oss task inout(_out[0]) label(init_gp)
 template <int tdim>
-void set_gp(double *const _int_vars_n, double *const _int_vars_k,
-              double *const tu_n, double *const tu_k, int tnndim,
-              gp_t<tdim> *_out)
+void set_gp(double *_int_vars_k, double *_u_k, int tnndim, gp_t<tdim> *_out)
 {
-	dprintf("Node: %d set(%p)\n", get_node_id(), _out);
-	_out[0].init(_int_vars_n, _int_vars_k, tu_n, tu_k, tnndim);
+	dprintf("Node: %d set_gp(%p) = {%p; %p}\n",
+	        get_node_id(), _out, _int_vars_k, _u_k);
+	_out[0].init(_int_vars_k, _u_k, tnndim);
 }
 
 
@@ -86,10 +85,8 @@ void set_gp(double *const _int_vars_n, double *const _int_vars_k,
 template <typename T>
 void set_val(T _in, T *_out)
 {
-	_out[0] = _in;
+	*_out = _in;
 }
-
-
 
 
 template <int tdim>

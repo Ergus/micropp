@@ -65,7 +65,7 @@ struct data {
 	public:
 		// Constants only vars
 		int ngp, nx, ny, nz, nn, nndim;
-	int nex, ney, nez, nelem;
+		int nex, ney, nez, nelem;
 		double lx, ly, lz;
 		double dx, dy, dz;
 		double vol_tot;
@@ -89,7 +89,7 @@ struct data {
 		int *ell_cols;
 		int ell_cols_size;
 
-		double *du_n, *du_k, *dint_vars_n, *dint_vars_k;
+		double *du_k, *dint_vars_k;
 };
 
 template <int tdim>

@@ -123,7 +123,6 @@ int main(int argc, char **argv)
 			cout << endl;
 		}
 
-		micro.update_vars();
 		micro.output (t, 1);
 		micro.write_info_files();
 		cout << endl;

@@ -36,9 +36,7 @@ class gp_t {
 
 		bool allocated; // flag for memory optimization
 
-		double *int_vars_n; // vectors for calculations
 		double *int_vars_k;
-		double *u_n;
 		double *u_k;
 
 		int nr_its[nvoi + 1]; // measurements
@@ -47,21 +45,14 @@ class gp_t {
 
 		gp_t() = delete;
 
-		void init(double *_int_vars_n, double *_int_vars_k,
-		          double *_u_n, double *_u_k, int nndim)
+		void init(double *_int_vars_k, double *_u_k, int nndim)
 		{
 			assert(nndim > 0);
 			allocated = false;
-
-			int_vars_n = _int_vars_n;
-			int_vars_k = _int_vars_k;
-
-			u_n = _u_n;
-			u_k = _u_k;
-
 			inv_max = -1.0;
 
-			// memset(u_n, 0, nndim * sizeof(double));
+			int_vars_k = _int_vars_k;
+			u_k = _u_k;
 		}
 
 		~gp_t()
@@ -70,21 +61,7 @@ class gp_t {
 		void allocate(const int num_int_vars)
 		{
 			assert(!allocated);
-
-			memset(int_vars_n, 0, num_int_vars * sizeof(double));
 			allocated = true;
-		}
-
-
-		void update_vars()
-		{
-			double *tmp = int_vars_n;
-			int_vars_n = int_vars_k;
-			int_vars_k = tmp;
-
-			tmp = u_n;
-			u_n = u_k;
-			u_k = tmp;
 		}
 
 
@@ -108,8 +85,7 @@ class gp_t {
 
 		void print()
 		{
-			printf("u_n: %p u_k: %p v_n: %p v_k: %p\n",
-			       u_n, u_k, int_vars_n, int_vars_k);
+			printf("gp: %p u_k: %p v_k: %p\n", this, u_k, int_vars_k);
 		}
 };
 

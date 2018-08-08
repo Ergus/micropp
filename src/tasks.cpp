@@ -34,18 +34,16 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 
 	micropp<tdim> self(&self_data, gp_ptr);
 
-	double *vold = nullptr, *vnew = nullptr;
-	double *aux_old = nullptr, *aux_new = nullptr;
+	double *u_n = (double *) malloc(nndim * sizeof(double));
+	double *vnew = (double *) malloc(num_int_vars * sizeof(double));
+
+	double *vold = nullptr, *aux_old = nullptr;
 
 	if (!allocated) {
 		aux_old = (double *) calloc(num_int_vars, sizeof(double));
-		aux_new = (double *) malloc(num_int_vars * sizeof(double));
-
 		vold = aux_old;
-		vnew = aux_new;
 	} else {
-		vold = gp_ptr->int_vars_n;
-		vnew = gp_ptr->int_vars_k;
+		vold = gp_ptr->int_vars_k;
 	}
 
 	double *u_aux = (double *) malloc(nndim * sizeof(double));
@@ -57,17 +55,17 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 	ell_init(&A, ell_cols, self.dim, self.dim, ns, CG_MIN_ERR, CG_MAX_ITS);
 
 	// SIGMA (1 Newton-Raphson)
-	memcpy(gp_ptr->u_k, gp_ptr->u_n, nndim * sizeof(double));
+	memcpy(u_n, gp_ptr->u_k, nndim * sizeof(double));
 
 	double nr_err;
-	int nr_its = self.newton_raphson(gp_ptr->macro_strain, &A, gp_ptr->u_k,
+	int nr_its = self.newton_raphson(gp_ptr->macro_strain, &A, u_n,
 	                                 b, du_aux, vold, &nr_err);
 	gp_ptr->nr_its[0] = nr_its;
 	gp_ptr->nr_err[0] = nr_err;
 
-	self.calc_ave_stress(gp_ptr->u_k, vold, gp_ptr->macro_stress);
+	self.calc_ave_stress(u_n, vold, gp_ptr->macro_stress);
 
-	bool nl_flag = self.calc_vars_new(gp_ptr->u_k, vold, vnew);
+	bool nl_flag = self.calc_vars_new(u_n, vold, vnew);
 
 	if (nl_flag) {
 		if (!allocated) {
@@ -77,7 +75,7 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 	}
 
 	// CTAN (6 Newton-Raphson's)
-	memcpy(u_aux, gp_ptr->u_k, nndim * sizeof(double));
+	memcpy(u_aux, u_n, nndim * sizeof(double));
 	double eps_1[6], sig_0[6], sig_1[6];
 	memcpy(sig_0, gp_ptr->macro_stress, self.nvoi * sizeof(double));
 
@@ -97,8 +95,12 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 
 	}
 
+	memcpy(gp_ptr->u_k, u_n, nndim * sizeof(double));
+
+	if (gp_ptr->allocated)
+		memcpy(gp_ptr->int_vars_k, vnew, num_int_vars * sizeof(double));
+
 	free(aux_old);
-	free(aux_new);
 
 	ell_free(&A);
 	free(u_aux);
@@ -135,9 +137,7 @@ void homogenize_weak_task(data self, int nvoi,
 
 	} else {
 
-		double *tv_n = gp_ptr->int_vars_n;
 		double *tv_k = gp_ptr->int_vars_k;
-		double *tu_n = gp_ptr->u_n;
 		double *tu_k = gp_ptr->u_k;
 
 		if (gp_ptr->allocated) {
@@ -146,9 +146,7 @@ void homogenize_weak_task(data self, int nvoi,
 				in(elem_type[0; nelem]) \
                                                                         \
 				inout(gp_ptr) \
-				inout(tu_n[0; nndim]) \
 				inout(tu_k[0; nndim]) \
-				inout(tv_k[0; num_int_vars]) \
 				inout(tv_k[0; num_int_vars])
 			{
 				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
@@ -169,9 +167,7 @@ void homogenize_weak_task(data self, int nvoi,
 				in(elem_type[0; nelem]) \
                                                                         \
 				inout(gp_ptr) \
-				inout(tu_n[0; nndim]) \
 				inout(tu_k[0; nndim]) \
-				inout(tv_k[0; num_int_vars]) \
 				inout(tv_k[0; num_int_vars])
 			{
 				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);

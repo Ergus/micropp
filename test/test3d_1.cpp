@@ -78,8 +78,6 @@ int main (int argc, char *argv[])
 		micro.output (t, 0);
 		micro.write_info_files ();
 
-		micro.update_vars();
-
 		cout << "eps =\t";
 		for (int i = 0; i < 6; ++i)
 			cout << setw(14) << eps[i] << "\t";

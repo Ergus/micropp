@@ -48,9 +48,10 @@ int main (int argc, char *argv[])
 	const int nez = (dim == 3) ? nz - 1 : 0;
 	const int ns[3] = { nx, ny, nz };
 	const int nfield = 1;
+	int size;
 
 	ell_matrix A1;
-	int *cols;
+	int *cols = ell_malloc_cols(nfield,  dim,  ns, &size);
 	ell_init_cols(nfield, dim, ns, cols);
 
 	double cg_err;
@@ -106,6 +107,6 @@ int main (int argc, char *argv[])
 
 	ell_free(&A1);
 	free(cols);
-	
+
 	return 0;
 }

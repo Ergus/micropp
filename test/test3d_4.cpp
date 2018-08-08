@@ -134,7 +134,6 @@ int main(int argc, char **argv)
 		cout << "Diff sig:\t" << diff_sum_sig << endl;
 		cout << "Diff ctan:\t" << diff_sum_ctan << endl;
 
-		micro.update_vars();
 		micro.output (t, 1);
 		micro.write_info_files();
 		cout << endl;

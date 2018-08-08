@@ -50,7 +50,7 @@ data::data(const int tdim, const int _ngp, const int size[3], const int _micro_t
 	output_files_header = false;
 }
 
-
+#
 template<int tdim>
 micropp<tdim>::micropp(data *in, gp_t<tdim> *list) :
 	data(*in), gp_list(list), copy(true)
@@ -84,43 +84,39 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
 
 	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
+    printf("region: [%p,%p)\n", material_list, material_list + numMaterials);
 
 	elem_type = (int *) rrd_malloc(nelem * sizeof(int));
 
 	// Shared arrays for gp
-	dint_vars_n = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
-	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
-
-	du_n = (double *) rrd_malloc(ngp * nndim * sizeof(double));
 	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
+	dint_vars_k = (double *) rrd_malloc(ngp * num_int_vars * sizeof(double));
 
 	elem_stress = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 	elem_strain = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 
+	#pragma oss taskwait
 	// gp_list
 	for (int gp = 0; gp < ngp; gp++) {
 
 		gp_t<tdim> *gp_ptr = &gp_list[gp];
 
-		double *tv_n = &dint_vars_n[num_int_vars * gp];
 		double *tv_k = &dint_vars_k[num_int_vars * gp];
-		double *tu_n = &du_n[nndim *gp];
 		double *tu_k = &du_k[nndim *gp];
 		int tnndim = nndim;
 
-		printf("%p %p %p %p %p\n", gp_ptr, tv_n, tv_k, tu_n, tu_k);
+		printf("%p %p %p\n", gp_ptr, tv_k, tu_k);
 
-		set_gp<tdim>(tv_n, tv_k, tu_n, tu_k, tnndim, gp_ptr);
-
+		set_gp<tdim>(tv_k, tu_k, tnndim, gp_ptr);
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
-
-		set_val<material_t>(_materials[i], material_ptr);
+		material_t material_tmp = _materials[i];
+        printf("material_ptr: %p\n", material_ptr);
+		set_val<material_t>(material_tmp, material_ptr);
 
 	}
-
 
 	// Type
 	for (int ez = 0; ez < nez; ++ez) {
@@ -136,7 +132,6 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		}
 	}
 
-
 	ell_cols = (int *) ell_malloc_cols(dim, dim, size, &ell_cols_size);
 
 	int *ell_cols_ptr = ell_cols;
@@ -146,9 +141,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
 	ell_init_cols(tdim, tdim, size, ell_cols_ptr);
 
-
 	#pragma oss taskwait
-
 	calc_ctan_lin();
 
 	ofstream file;
@@ -178,10 +171,10 @@ micropp<tdim>::~micropp()
 	rrd_free(material_list);
 
 	rrd_free(gp_list);
-	rrd_free(du_n);
+
 	rrd_free(du_k);
-	rrd_free(dint_vars_n);
 	rrd_free(dint_vars_k);
+
 	rrd_free(ell_cols);
 }
 

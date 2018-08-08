@@ -72,9 +72,7 @@ void micropp<tdim>::homogenize()
 		int *elem_type_ptr = elem_type;
 		int nelem_tmp = nelem;
 
-		double *tv_n = &(dint_vars_n[num_int_vars * gp]);
 		double *tv_k = &(dint_vars_k[num_int_vars * gp]);
-		double *tu_n = &(du_n[nndim *gp]);
 		double *tu_k = &(du_k[nndim *gp]);
 		int nndim_tmp = nndim;
 		int num_int_vars_tmp = num_int_vars;
@@ -86,9 +84,7 @@ void micropp<tdim>::homogenize()
 			in(elem_type_ptr[0; nelem_tmp]) \
 			 \
 			inout(gp_ptr[0]) \
-			weakinout(tu_n[0; nndim_tmp]) \
 			weakinout(tu_k[0; nndim_tmp]) \
-			weakinout(tv_n[0; num_int_vars_tmp]) \
 			weakinout(tv_k[0; num_int_vars_tmp])
 		homogenize_weak_task(*this, tnvoi,
 		                     ell_cols_ptr, ell_cols_size_tmp,
@@ -97,14 +93,6 @@ void micropp<tdim>::homogenize()
 		                     gp_ptr, nndim_tmp, num_int_vars_tmp);
 	}
 	#pragma oss taskwait
-}
-
-template <int tdim>
-void micropp<tdim>::update_vars()
-{
-	for (int gp = 0; gp < ngp; ++gp) {
-		gp_list[gp].update_vars();
-	}
 }
 
 // Explicit instantiation
