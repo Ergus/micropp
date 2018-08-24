@@ -26,7 +26,11 @@ extract_data.py
 !scripts/extract_data.py
 compile_commands.json
 scripts/output*
-
 \#*
 .#*
+GPATH
+GRTAGS
+GTAGS
+#*#
 *.swp
+.dumbjump

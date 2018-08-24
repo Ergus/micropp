@@ -104,7 +104,6 @@ class micropp : public data {
 
 		gp_t<tdim> *gp_list;
 
-
 		// Common
 		void calc_ctan_lin();
 

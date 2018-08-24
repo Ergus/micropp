@@ -40,13 +40,9 @@ void micropp<3>::get_dev_tensor(const double tensor[6],
 
 
 template <>
-bool micropp<3>::plastic_law(const material_t *material,
-							 const double eps[6],
-							 const double eps_p_old[6],
-							 double alpha_old,
-							 double *_dl,
-							 double _normal[6],
-							 double _s_trial[6]) const
+bool micropp<3>::plastic_law(const material_t *material, const double eps[6],
+                             const double eps_p_old[6], double alpha_old,
+                             double *_dl, double _normal[6], double _s_trial[6]) const
 {
 	/* Calculates _dl, _normal and _s_trial */
 
