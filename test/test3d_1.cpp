@@ -44,7 +44,7 @@ int main (int argc, char *argv[])
 	const int nz = atoi(argv[3]);
 	const int dir = atoi(argv[4]);
 	const int time_steps = (argc > 5 ? atoi(argv[5]) : 10);  // Optional value
-	int size[3] = { nx, ny, nz };
+	int size[3] = {nx, ny, nz};
 
 	int micro_type = 1; // 2 capas
 	double micro_params[5] = { 1., 1., 1., .5, 0. };
