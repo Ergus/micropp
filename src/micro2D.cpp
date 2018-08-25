@@ -83,28 +83,24 @@ void micropp<2>::calc_bmat(int gp, double *bmat)	const
 {
 	const int npedim = npe * dim;
 
-	const double xg[npe][dim] = { { -CONSTXG, -CONSTXG },
-	                              { +CONSTXG, -CONSTXG },
-	                              { +CONSTXG, +CONSTXG },
-	                              { -CONSTXG, +CONSTXG } };
+	const double xg[] = { -CONSTXG, -CONSTXG,
+	                      +CONSTXG, -CONSTXG,
+	                      +CONSTXG, +CONSTXG,
+	                      -CONSTXG, +CONSTXG };
 
-	const double dsh[npe][dim] = {
-		{ -(1 - xg[gp][1]) / 4 * 2 / dx,
-		  -(1 - xg[gp][0]) / 4 * 2 / dy },
-		{ +(1 - xg[gp][1]) / 4 * 2 / dx,
-		  -(1 + xg[gp][0]) / 4 * 2 / dy },
-		{ +(1 + xg[gp][1]) / 4 * 2 / dx,
-		  +(1 + xg[gp][0]) / 4 * 2 / dy },
-		{ -(1 + xg[gp][1]) / 4 * 2 / dx,
-		  +(1 - xg[gp][0]) / 4 * 2 / dy } };
+	const double dsh[] = {
+		-(1 - xg[gp * dim + 1]) / 4 * 2 / dx, -(1 - xg[gp * dim + 0]) / 4 * 2 / dy,
+		+(1 - xg[gp * dim + 1]) / 4 * 2 / dx, -(1 + xg[gp * dim + 0]) / 4 * 2 / dy,
+		+(1 + xg[gp * dim + 1]) / 4 * 2 / dx, +(1 + xg[gp * dim + 0]) / 4 * 2 / dy,
+		-(1 + xg[gp * dim + 1]) / 4 * 2 / dx, +(1 - xg[gp * dim + 0]) / 4 * 2 / dy };
 
 	for (int i = 0; i < npe; ++i) {
-		bmat[0 * npedim + i * dim    ] = dsh[i][0];
+		bmat[0 * npedim + i * dim    ] = dsh[i * dim + 0];
 		bmat[0 * npedim + i * dim + 1] = 0;
 		bmat[1 * npedim + i * dim    ] = 0;
-		bmat[1 * npedim + i * dim + 1] = dsh[i][1];
-		bmat[2 * npedim + i * dim    ] = dsh[i][1];
-		bmat[2 * npedim + i * dim + 1] = dsh[i][0];
+		bmat[1 * npedim + i * dim + 1] = dsh[i * dim + 1];
+		bmat[2 * npedim + i * dim    ] = dsh[i * dim + 1];
+		bmat[2 * npedim + i * dim + 1] = dsh[i * dim + 0];
 	}
 }
 
@@ -180,15 +176,16 @@ void micropp<2>::get_elem_mat(const double *u, const double *old,
 	const int npedim = npe * dim;
 	const int npedim2 = npedim * npedim;
 
-	double ctan[nvoi][nvoi] = {{(1 - nu),     nu,             0 },
-	                           {      nu, (1 - nu),           0 },
-	                           {       0,   0, (1 - 2 * nu) / 2 }};
+	double ctan[3][3] = {{(1 - nu),       nu,                0 },
+	                     {      nu, (1 - nu),                0 },
+	                     {       0,        0, (1 - 2 * nu) / 2 }};
 
 	for (int i = 0; i < nvoi; i++)
 		for (int j = 0; j < nvoi; j++)
 			ctan[i][j] *= E / ((1 + nu) * (1 - 2 * nu));
 
-	double TAe[npedim2] = { 0.0 };
+	double *TAe = (double *) alloca(npedim2 * sizeof(double));
+	memset(TAe, 0, npedim2 * sizeof(double));
 
 	for (int gp = 0; gp < npe; ++gp) {
 

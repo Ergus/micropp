@@ -203,7 +203,7 @@ void micropp<tdim>::calc_ctan_lin()
 	double *du = (double *) malloc(nndim * sizeof(double));
 	double *old = (double *) calloc(num_int_vars, sizeof(double));
 
-	const int ns[3] = { nx, ny, nz };
+	const int ns[] = { nx, ny, nz };
 	ell_matrix A;
 	ell_init(&A, ell_cols, dim, dim, ns, CG_MIN_ERR, CG_MAX_ITS);
 
@@ -215,7 +215,7 @@ void micropp<tdim>::calc_ctan_lin()
 		double nr_err;
 		newton_raphson(eps_1, &A, u_aux, b, du, old, &nr_err);
 
-		double sig_1[6];
+		double sig_1[nvoi];
 		calc_ave_stress(u_aux, old, sig_1);
 
 		for (int v = 0; v < nvoi; ++v)
@@ -252,8 +252,7 @@ material_t micropp<tdim>::get_material(const int e) const
 
 template <int tdim>
 void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
-                                 double *be,
-                                 int ex, int ey, int ez) const
+                                 double *be, int ex, int ey, int ez) const
 {
 	const int npedim = npe * dim;
 	double bmat[nvoi][npedim], stress_gp[nvoi], strain_gp[nvoi];
