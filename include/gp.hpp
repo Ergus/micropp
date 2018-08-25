@@ -23,31 +23,36 @@
 #define GP_HPP
 
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 
-template <int dim>
+#define gp_nvoi 6
+
 class gp_t {
-		static constexpr int nvoi = dim * (dim + 1) / 2;  // 3, 6
+		 int dim;
 	public:
-		double macro_strain[nvoi];
-		double macro_stress[nvoi];
-		double macro_ctan[nvoi * nvoi];
+		double macro_strain[gp_nvoi];
+		double macro_stress[gp_nvoi];
+		double macro_ctan[gp_nvoi * gp_nvoi];
 
 		bool allocated; // flag for memory optimization
 
 		double *int_vars_k;
 		double *u_k;
 
-		int nr_its[nvoi + 1]; // measurements
-		double nr_err[nvoi + 1];
+		int nr_its[gp_nvoi + 1]; // measurements
+		double nr_err[gp_nvoi + 1];
 		double inv_max;
 
 		gp_t() = delete;
 
-		void init(double *_int_vars_k, double *_u_k, int nndim)
+		void init(const int tdim, double *_int_vars_k, double *_u_k, int nndim)
 		{
+			assert(tdim == 2 || tdim == 3);
 			assert(nndim > 0);
+
+			dim = tdim;
 			allocated = false;
 			inv_max = -1.0;
 
@@ -64,14 +69,13 @@ class gp_t {
 			allocated = true;
 		}
 
-
 		bool is_linear(const double *ctan_lin, const double _inv_tol,
 		               double _inv_max)
 		{
-			double macro_stress[nvoi] = { 0.0 };
-			for (int i = 0; i < nvoi; ++i)
-				for (int j = 0; j < nvoi; ++j)
-					macro_stress[i] += ctan_lin[i * nvoi + j] * macro_strain[j];
+			double macro_stress[gp_nvoi] = { 0.0 };
+			for (int i = 0; i < gp_nvoi; ++i)
+				for (int j = 0; j < gp_nvoi; ++j)
+					macro_stress[i] += ctan_lin[i * gp_nvoi + j] * macro_strain[j];
 
 			double inv = macro_stress[0];
 			for(int i = 1; i < dim; ++i)

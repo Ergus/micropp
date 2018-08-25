@@ -21,9 +21,7 @@
 
 #include "micro.hpp"
 
-
-template <>
-void micropp<2>::set_displ_bc(const double *eps, double *u) const
+void micropp::set_displ_bc_2D(const double *eps, double *u) const
 {
 	const double eps_t[] = {       eps[0], 0.5 * eps[2],
 	                         0.5 * eps[2],       eps[1] };
@@ -55,38 +53,14 @@ void micropp<2>::set_displ_bc(const double *eps, double *u) const
 }
 
 
-template <>
-void micropp<2>::isolin_get_stress(
-		const material_t *material, const double eps[6],
-		double stress[6]) const
-{
-	const double E = material->E;
-	const double nu = material->nu;
-
-	double ctan[3][3] = { { (1 - nu),     	nu,                0 },
-	                      {       nu, (1 - nu),                0 },
-	                      {        0,        0, (1 - 2 * nu) / 2 } };
-
-	for (int i = 0; i < nvoi; i++)
-		for (int j = 0; j < nvoi; j++)
-			ctan[i][j] *= E / ((1 + nu) * (1 - 2 * nu));
-
-	memset(stress, 0, nvoi * sizeof(double));
-	for (int i = 0; i < nvoi; i++)
-		for (int j = 0; j < nvoi; j++)
-			stress[i] += ctan[i][j] * eps[j];
-}
-
-
-template <>
-void micropp<2>::calc_bmat(int gp, double *bmat)	const
+void micropp::calc_bmat_2D(int gp, double *bmat)	const
 {
 	const int npedim = npe * dim;
 
-	const double xg[] = { -CONSTXG, -CONSTXG,
-	                      +CONSTXG, -CONSTXG,
-	                      +CONSTXG, +CONSTXG,
-	                      -CONSTXG, +CONSTXG };
+	constexpr double xg[] = { -CONSTXG, -CONSTXG,
+	                          +CONSTXG, -CONSTXG,
+	                          +CONSTXG, +CONSTXG,
+	                          -CONSTXG, +CONSTXG };
 
 	const double dsh[] = {
 		-(1 - xg[gp * dim + 1]) / 4 * 2 / dx, -(1 - xg[gp * dim + 0]) / 4 * 2 / dy,
@@ -105,8 +79,7 @@ void micropp<2>::calc_bmat(int gp, double *bmat)	const
 }
 
 
-template <>
-double micropp<2>::assembly_rhs(const double *u, const double *old,
+double micropp::assembly_rhs_2D(const double *u, const double *old,
                                 double *b) const
 {
 	memset(b, 0, nndim * sizeof(double));
@@ -162,19 +135,21 @@ double micropp<2>::assembly_rhs(const double *u, const double *old,
 }
 
 
-template <>
-template <>
-void micropp<2>::get_elem_mat(const double *u, const double *old,
-		double *Ae, int ex, int ey) const
+void micropp::get_elem_mat_2D(const double *u, const double *old,
+                           double *Ae, int ex, int ey) const
 {
 	const int e = glo_elem(ex, ey, 0);
 	const material_t material = get_material(e);
 
+	const int npedim = npe * dim;
+	const int npedim2 = npedim * npedim;
+
+	double *TAe = (double *) alloca(npedim2 * sizeof(double));
+	memset(TAe, 0, npedim2 * sizeof(double));
+
 	const double E = material.E;
 	const double nu = material.nu;
 	const bool plasticity = material.plasticity;
-	const int npedim = npe * dim;
-	const int npedim2 = npedim * npedim;
 
 	double ctan[3][3] = {{(1 - nu),       nu,                0 },
 	                     {      nu, (1 - nu),                0 },
@@ -184,14 +159,11 @@ void micropp<2>::get_elem_mat(const double *u, const double *old,
 		for (int j = 0; j < nvoi; j++)
 			ctan[i][j] *= E / ((1 + nu) * (1 - 2 * nu));
 
-	double *TAe = (double *) alloca(npedim2 * sizeof(double));
-	memset(TAe, 0, npedim2 * sizeof(double));
-
 	for (int gp = 0; gp < npe; ++gp) {
 
 		double bmat[nvoi][npedim], cxb[nvoi][npedim];
 
-		calc_bmat(gp, (double *) bmat);
+		calc_bmat_2D(gp, (double *) bmat);
 
 		for (int i = 0; i < nvoi; ++i) {
 			for (int j = 0; j < npedim; ++j) {
@@ -215,8 +187,7 @@ void micropp<2>::get_elem_mat(const double *u, const double *old,
 }
 
 
-template <>
-void micropp<2>::assembly_mat(const double *u, const double *old,
+void micropp::assembly_mat_2D(const double *u, const double *old,
                               ell_matrix *A) const
 {
 	ell_set_zero_mat(A);
@@ -224,46 +195,10 @@ void micropp<2>::assembly_mat(const double *u, const double *old,
 	double Ae[npe * dim * npe * dim];
 	for (int ex = 0; ex < nex; ++ex) {
 		for (int ey = 0; ey < ney; ++ey) {
-			get_elem_mat(u, old, Ae, ex, ey);
+			get_elem_mat_2D(u, old, Ae, ex, ey);
 			ell_add_2D(A, ex, ey, Ae);
 		}
 	}
 	ell_set_bc_2D(A);
 }
 
-
-template <>
-bool micropp<2>::plastic_law(const material_t *material,
-							 const double eps[6],
-							 const double eps_p_old[6],
-							 double alpha_old,
-							 double *_dl,
-							 double _normal[6],
-							 double _s_trial[6]) const
-{
-	return false;
-}
-
-
-template <>
-void micropp<2>::plastic_get_stress(
-		const material_t *material, const double eps[6],
-		const double eps_p_old[6], double alpha_old,
-		double stress[6]) const
-{
-}
-
-
-template <>
-bool micropp<2>::plastic_evolute(const material_t *material,
-								 const double eps[6],
-								 const double eps_p_old[6],
-								 double alpha_old, 
-								 double *eps_p_new,
-								 double *alpha_new) const
-{
-	return false;
-}
-
-// Explicit instantiation
-template class micropp<2>;

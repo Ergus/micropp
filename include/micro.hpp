@@ -56,7 +56,6 @@
 
 using namespace std;
 
-template <int tdim>
 class micropp {
 	public:
 		int dim;   // 2, 3
@@ -93,8 +92,7 @@ class micropp {
 
 		bool copy;
 
-
-		gp_t<tdim> *gp_list;
+		gp_t *gp_list;
 
 		// Common
 		void calc_ctan_lin();
@@ -132,55 +130,59 @@ class micropp {
 		                   double *_err) const;
 
 		// Specialized
-		template <typename... Rest>
-		void get_elem_mat(const double *u, const double *old,
-		                  double *Ae, int ex, int ey, Rest...) const;
+		void get_elem_mat_2D(const double *u, const double *old,
+		                     double *Ae, int ex, int ey) const;
+		void get_elem_mat_3D(const double *u, const double *old,
+		                     double *Ae, int ex, int ey, int ez) const;
 
-		void set_displ_bc(const double *strain, double *u) const;
+		void set_displ_bc_2D(const double *strain, double *u) const;
+		void set_displ_bc_3D(const double *strain, double *u) const;
 
-		double assembly_rhs(const double *u, const double *old, double *b) const;
-		void assembly_mat(const double *u, const double *old, ell_matrix *A) const;
+		double assembly_rhs_2D(const double *u, const double *old, double *b) const;
+		double assembly_rhs_3D(const double *u, const double *old, double *b) const;
 
-		void calc_bmat(int gp, double *bmat) const;
+		void assembly_mat_2D(const double *u, const double *old, ell_matrix *A) const;
+		void assembly_mat_3D(const double *u, const double *old, ell_matrix *A) const;
+
+		void calc_bmat_2D(int gp, double *bmat) const;
+		void calc_bmat_3D(int gp, double *bmat) const;
 
 		bool calc_vars_new(const double *u, const double *_old, double *_new) const;
 
 		void write_vtu(const double *old, double *u, int tstep, int gp_id);
 
 		// Functions Only for 3D
-		void get_dev_tensor(const double tensor[6], double tensor_dev[6]) const;
+		void get_dev_tensor_3D(const double tensor[6], double tensor_dev[6]) const;
 
-		bool plastic_law(
-			const material_t *material, const double eps[6],
-			const double eps_p_old[6], double alpha_old,
-			double *_dl, double _normal[6], double _s_trial[6]) const;
+		bool plastic_law_if(const material_t *material, const double eps[6],
+		                    const double eps_p_old[6], double alpha_old,
+		                    double *_dl, double _normal[6], double _s_trial[6]) const;
 
-		void plastic_get_ctan(
+		void plastic_get_ctan_3D(
 			const material_t *material, const double eps[6],
 			const double eps_p_old[6], double alpha_old,
 			double ctan[6][6]) const;
 
-		bool plastic_evolute(const material_t *material, const double eps[6],
+		bool plastic_evolute_if(const material_t *material, const double eps[6],
 			const double eps_p_old[6], double alpha_old,
 			double eps_p_new[6], double *alpha_new) const;
 
-		void isolin_get_ctan(const material_t *material, double ctan[6][6]) const;
+		void isolin_get_ctan_3D(const material_t *material, double ctan[6][6]) const;
 
+		void plastic_get_stress_3D(const material_t *material, const double eps[6],
+		                           const double eps_p_old[6], double alpha_old,
+		                           double stress[6]) const;
 
-		void plastic_get_stress(const material_t *material, const double eps[6],
-		                        const double eps_p_old[6], double alpha_old,
-		                        double stress[6]) const;
-
-		void isolin_get_stress(const material_t *material, const double eps[6],
-		                       double stress[6]) const;
+		void isolin_get_stress_if(const material_t *material, const double eps[6],
+		                          double stress[6]) const;
 
 		micropp() = delete;
 
-		micropp(const int ngp, const int size[3], const int micro_type,
+		micropp(const int dim, const int ngp, const int size[3], const int micro_type,
 		        const double *micro_params, const material_t *materials);
 
-		micropp(micropp<tdim> *in);
-		micropp(const micropp<tdim> &in);
+		micropp(micropp *in);
+		micropp(const micropp &in);
 
 		~micropp();
 

@@ -20,49 +20,50 @@ module libmicropp
 
   implicit none
 
-  private :: new_micropp3, set_macro_strain, homogenize, &
+  private :: new_micropp, set_macro_strain, homogenize, &
        get_macro_stress, get_macro_ctan, update_vars, &
        get_nl_flag, write_info_files, output
 
   public :: micropp3, free
 
-  type :: micropp3
+  type :: micropp
      private
      integer(8) :: ptr ! pointer
    contains
      procedure :: set_macro_strain, homogenize, &
           get_macro_stress, get_macro_ctan, update_vars, &
           get_nl_flag, write_info_files, output, print_info
-  end type micropp3
+  end type micropp
 
-  interface micropp3
-     procedure new_micropp3
-  end interface micropp3
+  interface micropp
+     procedure new_micropp
+  end interface micropp
 
-  integer(8) :: init3
-  external init3
+  integer(8) :: init
+  external init
 
 contains
 
   !------------------------------------------------------------
   ! Constructors
 
-  function new_micropp3(ngp, size, micro_type, micro_params, params)
+  function new_micropp(dim, ngp, size, micro_type, micro_params, params)
     implicit none
-    type(micropp3) :: new_micropp3
+    type(micropp) :: new_micropp
+    integer, intent(in) :: dim
     integer, intent(in) :: ngp
     integer, intent(in) :: size(3)
     integer, intent(in) :: micro_type
     real(8), intent(in), dimension (*) :: micro_params
     type(material_t), intent(in), dimension (*) :: params
 
-    new_micropp3%ptr = init3(ngp, size, micro_type, micro_params, params)
+    new_micropp3%ptr = init(dim, ngp, size, micro_type, micro_params, params)
 
-  end function new_micropp3
+  end function new_micropp
 
   subroutine free(this)
     class(micropp3) :: this
-    call free3(this%ptr)
+    call free(this%ptr)
   end subroutine free
 
   !------------------------------------------------------------

@@ -21,9 +21,7 @@
 
 #include "micro.hpp"
 
-
-template <>
-void micropp<3>::set_displ_bc(const double *eps, double *u) const
+void micropp::set_displ_bc_3D(const double *eps, double *u) const
 {
 	const double eps_t[] = {       eps[0], 0.5 * eps[3], 0.5 * eps[4] ,
 	                         0.5 * eps[3],       eps[1], 0.5 * eps[5] ,
@@ -80,19 +78,18 @@ void micropp<3>::set_displ_bc(const double *eps, double *u) const
 }
 
 
-template <>
-void micropp<3>::calc_bmat(int gp, double *bmat) const
+void micropp::calc_bmat_3D(int gp, double *bmat) const
 {
 	const int npedim = npe * dim;
 
-	const double xg[] = { -CONSTXG, -CONSTXG, -CONSTXG ,
-	                      +CONSTXG, -CONSTXG, -CONSTXG ,
-	                      +CONSTXG, +CONSTXG, -CONSTXG ,
-	                      -CONSTXG, +CONSTXG, -CONSTXG ,
-	                      -CONSTXG, -CONSTXG, +CONSTXG ,
-	                      +CONSTXG, -CONSTXG, +CONSTXG ,
-	                      +CONSTXG, +CONSTXG, +CONSTXG ,
-	                      -CONSTXG, +CONSTXG, +CONSTXG  };
+	constexpr double xg[] = { -CONSTXG, -CONSTXG, -CONSTXG ,
+	                          +CONSTXG, -CONSTXG, -CONSTXG ,
+	                          +CONSTXG, +CONSTXG, -CONSTXG ,
+	                          -CONSTXG, +CONSTXG, -CONSTXG ,
+	                          -CONSTXG, -CONSTXG, +CONSTXG ,
+	                          +CONSTXG, -CONSTXG, +CONSTXG ,
+	                          +CONSTXG, +CONSTXG, +CONSTXG ,
+	                          -CONSTXG, +CONSTXG, +CONSTXG  };
 
 	const double dsh[] = {
 		  -(1 - xg[gp * dim + 1]) * (1 - xg[gp * dim + 2]) / 8. * 2. / dx,
@@ -143,8 +140,7 @@ void micropp<3>::calc_bmat(int gp, double *bmat) const
 }
 
 
-template<>
-double micropp<3>::assembly_rhs(const double *u, const double *old,
+double micropp::assembly_rhs_3D(const double *u, const double *old,
                                 double *b) const
 {
 	memset(b, 0, nndim * sizeof(double));
@@ -227,10 +223,8 @@ double micropp<3>::assembly_rhs(const double *u, const double *old,
 }
 
 
-template <>
-template <>
-void micropp<3>::get_elem_mat(const double *u, const double *old,
-		double *Ae, int ex, int ey, int ez) const
+void micropp::get_elem_mat_3D(const double *u, const double *old,
+                              double *Ae, int ex, int ey, int ez) const
 {
 	const int e = glo_elem(ex, ey, ez);
 	const material_t material = get_material(e);
@@ -252,12 +246,12 @@ void micropp<3>::get_elem_mat(const double *u, const double *old,
 		double alpha_old = old[intvar_ix(e, gp, 6)];
 
 		if (material.plasticity)
-			plastic_get_ctan(&material, eps, eps_p_old, alpha_old, ctan);
+			plastic_get_ctan_3D(&material, eps, eps_p_old, alpha_old, ctan);
 		else
-			isolin_get_ctan(&material, ctan);
+			isolin_get_ctan_3D(&material, ctan);
 
 		double bmat[nvoi][npedim], cxb[nvoi][npedim];
-		calc_bmat(gp, (double *) bmat);
+		calc_bmat_3D(gp, (double *) bmat);
 
 		for (int i = 0; i < nvoi; ++i) {
 			for (int j = 0; j < npedim; ++j) {
@@ -281,8 +275,7 @@ void micropp<3>::get_elem_mat(const double *u, const double *old,
 }
 
 
-template <>
-void micropp<3>::assembly_mat(const double *u, const double *old,
+void micropp::assembly_mat_3D(const double *u, const double *old,
                               ell_matrix *A) const
 {
 	ell_set_zero_mat(A);
@@ -291,7 +284,7 @@ void micropp<3>::assembly_mat(const double *u, const double *old,
 	for (int ex = 0; ex < nex; ++ex) {
 		for (int ey = 0; ey < ney; ++ey) {
 			for (int ez = 0; ez < nez; ++ez) {
-				get_elem_mat(u, old, Ae, ex, ey, ez);
+				get_elem_mat_3D(u, old, Ae, ex, ey, ez);
 				ell_add_3D(A, ex, ey, ez, Ae);
 			}
 		}
@@ -299,5 +292,73 @@ void micropp<3>::assembly_mat(const double *u, const double *old,
 	ell_set_bc_3D(A);
 }
 
-// Explicit instantiation
-template class micropp<3>;
+
+void micropp::plastic_get_stress_3D(const material_t *material,
+                                    const double eps[6],
+                                    const double eps_p_old[6],
+                                    double alpha_old,
+                                    double stress[6]) const
+{
+	double dl, normal[6], s_trial[6];
+	bool nl_flag = plastic_law_if(material, eps, eps_p_old, alpha_old,
+	                              &dl, normal, s_trial);
+
+	//sig_2 = s_trial + K * tr(eps) * 1 - 2 * mu * dl * normal;
+	memcpy(stress, s_trial, 6 * sizeof(double));
+
+	for (int i = 0; i < 3; ++i)
+		stress[i] += material->k * (eps[0] + eps[1] + eps[2]);
+
+	for (int i = 0; i < 6; ++i)
+		stress[i] -= 2 * material->mu * dl * normal[i];
+}
+
+void micropp::plastic_get_ctan_3D(const material_t *material,
+								  const double eps[6],
+								  const double eps_p_old[6],
+								  double alpha_old,
+								  double ctan[6][6]) const
+{
+	double stress_0[6];
+	plastic_get_stress_3D(material, eps, eps_p_old, alpha_old, stress_0);
+
+	for (int i = 0; i < nvoi; ++i) {
+
+		double eps_1[6];
+		memcpy(eps_1, eps, nvoi * sizeof(double));
+		eps_1[i] += D_EPS_CTAN;
+
+		double stress_1[6];
+		plastic_get_stress_3D(material, eps_1, eps_p_old, alpha_old, stress_1);
+
+		for (int j = 0; j < nvoi; ++j)
+			ctan[j][i] = (stress_1[j] - stress_0[j]) / D_EPS_CTAN;
+	}
+}
+
+
+void micropp::get_dev_tensor_3D(const double tensor[6],
+                                double tensor_dev[6]) const
+{
+	memcpy(tensor_dev, tensor, nvoi * sizeof(double));
+	for (int i = 0; i < 3; i++)
+		tensor_dev[i] -= (1 / 3.0) * (tensor[0] + tensor[1] + tensor[2]);
+}
+
+
+void micropp::isolin_get_ctan_3D(const material_t *material,
+								 double ctan[6][6]) const
+{
+	// C = lambda * (1x1) + 2 mu I
+	memset(ctan, 0, nvoi * nvoi * sizeof(double));
+
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			ctan[i][j] += material->lambda;
+
+	for (int i = 0; i < 3; ++i)
+		ctan[i][i] += 2 * material->mu;
+
+	for (int i = 3; i < 6; ++i)
+		ctan[i][i] = material->mu;
+}

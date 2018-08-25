@@ -59,7 +59,7 @@ int main (int argc, char *argv[])
 	mat_params[0].set(1.0e6, 0.3,	5.0e4, 	5.0e4, 0);
 	mat_params[1].set(1.0e6, 0.3,	1.0e4, 	0.0e-1, 0);
 
-	micropp<2> micro(1, size, micro_type, micro_params, mat_params);
+	micropp micro(dim, 1, size, micro_type, micro_params, mat_params);
 
 	int dir = 2;
 	double sig[3], ctan[6];

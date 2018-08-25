@@ -27,13 +27,12 @@
 
 using namespace std;
 
-template <int tdim>
-void micropp<tdim>::output(int time_step, int gp_id)
+void micropp::output(int time_step, int gp_id)
 {
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
 
-	gp_t<tdim> * const gp_ptr = &gp_list[gp_id];
+	gp_t * const gp_ptr = &gp_list[gp_id];
 
 	double *vnew, *aux_new = nullptr;
 	if (!gp_ptr->allocated) {
@@ -53,8 +52,7 @@ void micropp<tdim>::output(int time_step, int gp_id)
 }
 
 
-template <int tdim>
-void micropp<tdim>::write_vtu(const double *old, double *u, int time_step, int gp_id)
+void micropp::write_vtu(const double *old, double *u, int time_step, int gp_id)
 {
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
@@ -179,8 +177,7 @@ void micropp<tdim>::write_vtu(const double *old, double *u, int time_step, int g
 }
 
 
-template <int tdim>
-void micropp<tdim>::write_info_files()
+void micropp::write_info_files()
 {
 	ofstream file;
 	if (output_files_header == false) {
@@ -255,7 +252,3 @@ void micropp<tdim>::write_info_files()
 	file.close();
 }
 
-
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;

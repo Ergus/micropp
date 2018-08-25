@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	sig_test = (double (*)[nvoi]) malloc(nvoi * ngp * sizeof(double));
 	ctan_test = (double (*)[nvoi * nvoi]) malloc(nvoi * nvoi * ngp * sizeof(double));
 
-	micropp<dim> micro(ngp, size, micro_type, micro_params, mat_params);
+	micropp micro(3, ngp, size, micro_type, micro_params, mat_params);
 
 	cout << scientific;
 	for (int t = 0; t < time_steps; ++t) {

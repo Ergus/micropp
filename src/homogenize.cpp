@@ -25,9 +25,8 @@
 #include "instrument.hpp"
 #include "micro.hpp"
 
-template <int tdim>
-void micropp<tdim>::set_macro_strain(const int gp_id,
-									 const double *macro_strain)
+void micropp::set_macro_strain(const int gp_id,
+                               const double *macro_strain)
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
@@ -35,9 +34,8 @@ void micropp<tdim>::set_macro_strain(const int gp_id,
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_macro_stress(const int gp_id,
-									 double *macro_stress) const
+void micropp::get_macro_stress(const int gp_id,
+                               double *macro_stress) const
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
@@ -45,23 +43,19 @@ void micropp<tdim>::get_macro_stress(const int gp_id,
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_macro_ctan(const int gp_id, double *macro_ctan) const
+void micropp::get_macro_ctan(const int gp_id, double *macro_ctan) const
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
 	memcpy(macro_ctan, gp_list[gp_id].macro_ctan, nvoi * nvoi * sizeof(double));
 }
 
-template <int tdim>
-void micropp<tdim>::homogenize()
+void micropp::homogenize()
 {
-	INST_START;
-
 	const int tnvoi = nvoi;
 
 	for (int gp = 0; gp < ngp; ++gp) {
-		gp_t<tdim> * const gp_ptr = &gp_list[gp];
+		gp_t * const gp_ptr = &gp_list[gp];
 
 		int *ell_cols_ptr = ell_cols;
 		int ell_cols_size_tmp = ell_cols_size;
@@ -95,6 +89,3 @@ void micropp<tdim>::homogenize()
 	#pragma oss taskwait
 }
 
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;

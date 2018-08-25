@@ -24,25 +24,37 @@
 using namespace std;
 
 
-template <int tdim>
-int micropp<tdim>::newton_raphson(const double *strain, ell_matrix *A,
-                                  double *u, double *b, double *du, double *old,
-                                  double *_err) const
+int micropp::newton_raphson(const double *strain, ell_matrix *A,
+                            double *u, double *b, double *du, double *old,
+                            double *_err) const
 {
 	INST_START;
 
-	set_displ_bc(strain, u);
+	if (dim == 3)
+		set_displ_bc_3D(strain, u);
+	else
+		set_displ_bc_2D(strain, u);
 
 	int lits = 0;
 	double lerr = 0.0, cg_err;
 
 	do {
-		lerr = assembly_rhs(u, old, b);  // Acts on b
 
-		if (lerr < NR_MAX_TOL)
-			break;
+		if (dim == 3) {
+			lerr = assembly_rhs_3D(u, old, b);  // Acts on b
 
-		assembly_mat(u, old, A);   // Acts on A
+			if (lerr < NR_MAX_TOL)
+				break;
+
+			assembly_mat_3D(u, old, A);   // Acts on A
+		} else {
+			lerr = assembly_rhs_2D(u, old, b);  // Acts on b
+
+			if (lerr < NR_MAX_TOL)
+				break;
+
+			assembly_mat_2D(u, old, A);   // Acts on A
+		}
 
 		// in(b) inout
 		int cg_its = ell_solve_cgpd(A, b, du, &cg_err);
@@ -58,7 +70,3 @@ int micropp<tdim>::newton_raphson(const double *strain, ell_matrix *A,
 	return lits;
 }
 
-
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;

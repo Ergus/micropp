@@ -70,7 +70,7 @@ program test3d_3
   call set(mat_params(1), 1.0e6, 0.3, 5.0e4, 5.0e4, 1)
   call set(mat_params(2), 1.0e6, 0.3, 1.0e4, 0.0e-1, 0)
 
-  micro = micropp3(1, sizes, micro_type, micro_params, mat_params)
+  micro = micropp(3, 1, sizes, micro_type, micro_params, mat_params)
   call micro%print_info()
 
   eps = (/ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 /)

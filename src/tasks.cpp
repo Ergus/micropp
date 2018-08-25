@@ -21,12 +21,11 @@
 
 #include "tasks.hpp"
 
-template <int tdim>
-void homogenize_conditional_task(micropp<tdim> self, int nvoi,
+void homogenize_conditional_task(micropp self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
-                                 gp_t<tdim> *gp_ptr,
+                                 gp_t *gp_ptr,
                                  int nndim, int num_int_vars,
                                  const bool allocated)
 {
@@ -107,12 +106,11 @@ void homogenize_conditional_task(micropp<tdim> self, int nvoi,
 }
 
 
-template <int tdim>
-void homogenize_weak_task(micropp<tdim> self, int nvoi,
+void homogenize_weak_task(micropp self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
-                          gp_t<tdim> *gp_ptr, int nndim, int num_int_vars)
+                          gp_t *gp_ptr, int nndim, int num_int_vars)
 {
 
 	if (gp_ptr->is_linear(self.ctan_lin, self.inv_tol, -1.0e10)
@@ -149,12 +147,12 @@ void homogenize_weak_task(micropp<tdim> self, int nvoi,
 			{
 				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
 				gp_ptr->print();
-			homogenize_conditional_task<tdim>(self, nvoi,
-			                                  ell_cols, ell_cols_size,
-			                                  material_list, numMaterials,
-			                                  elem_type, nelem,
-			                                  gp_ptr, nndim, num_int_vars,
-			                                  true);
+			homogenize_conditional_task(self, nvoi,
+			                            ell_cols, ell_cols_size,
+			                            material_list, numMaterials,
+			                            elem_type, nelem,
+			                            gp_ptr, nndim, num_int_vars,
+			                            true);
 
 
 			}
@@ -170,52 +168,14 @@ void homogenize_weak_task(micropp<tdim> self, int nvoi,
 			{
 				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
 				gp_ptr->print();
-			homogenize_conditional_task<tdim>(self, nvoi,
-			                                  ell_cols, ell_cols_size,
-			                                  material_list, numMaterials,
-			                                  elem_type, nelem,
-			                                  gp_ptr, nndim, num_int_vars,
-			                                  false);
+			homogenize_conditional_task(self, nvoi,
+			                            ell_cols, ell_cols_size,
+			                            material_list, numMaterials,
+			                            elem_type, nelem,
+			                            gp_ptr, nndim, num_int_vars,
+			                            false);
 			}
 		}
 	}
 }
-
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;
-
-template
-void homogenize_conditional_task<2>(micropp<2> self, const int nvoi,
-                                 int *ell_cols, const int ell_cols_size,
-                                 const material_t *material_list, const int numMaterials,
-                                 int *elem_type, const int nelem,
-                                 gp_t<2> *gp_ptr,
-                                 const int nndim, const int num_int_vars,
-                                 const bool allocated);
-
-
-template
-void homogenize_conditional_task<3>(micropp<3> self, const int nvoi,
-                                 int *ell_cols, const int ell_cols_size,
-                                 const material_t *material_list, const int numMaterials,
-                                 int *elem_type, const int nelem,
-                                 gp_t<3> *gp_ptr,
-                                 const int nndim, const int num_int_vars,
-                                 const bool allocated);
-
-
-template
-void homogenize_weak_task<2>(micropp<2> self, int nvoi,
-                          int *ell_cols, const int ell_cols_size,
-                          const material_t *material_list, const int numMaterials,
-                          int *elem_type, int nelem,
-                          gp_t<2> *gp_ptr, int nndim, int num_int_vars);
-
-template
-void homogenize_weak_task<3>(micropp<3> self, int nvoi,
-                          int *ell_cols, const int ell_cols_size,
-                          const material_t *material_list, const int numMaterials,
-                          int *elem_type, int nelem,
-                          gp_t<3> *gp_ptr, int nndim, int num_int_vars);
 

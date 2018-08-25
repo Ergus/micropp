@@ -21,26 +21,23 @@ k *  You should have received a copy of the GNU General Public License
 
 #include "micro.hpp"
 
-template<int tdim>
-micropp<tdim>::micropp(micropp<tdim> *in)
+micropp::micropp(micropp *in)
 {
-	memcpy(this, in, sizeof(micropp<tdim>));
+	memcpy(this, in, sizeof(micropp));
 	copy = true;
 }
 
 
-template<int tdim>
-micropp<tdim>::micropp(const micropp<tdim> &in)
+micropp::micropp(const micropp &in)
 {
-	memcpy(this, &in, sizeof(micropp<tdim>));
+	memcpy(this, &in, sizeof(micropp));
 	copy = true;
 }
 
-template<int tdim>
-micropp<tdim>::micropp(const int _ngp, const int size[3],
-                       const int _micro_type,
-                       const double _micro_params[5],
-                       const material_t *_materials) :
+micropp::micropp(const int tdim, const int _ngp, const int size[3],
+                 const int _micro_type,
+                 const double _micro_params[5],
+                 const material_t *_materials) :
 	dim(tdim),                    // 2, 3
 	npe(mypow(2, tdim)),          // 4, 8
 	nvoi(tdim * (tdim + 1) / 2),  // 3, 6
@@ -88,7 +85,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	}
 
 	// Common permanent arrays
-	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
+	gp_list = (gp_t *) rrd_malloc(ngp * sizeof(gp_t));
 
 	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
     printf("region: [%p,%p)\n", material_list, material_list + numMaterials);
@@ -106,22 +103,26 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	// gp_list
 	for (int gp = 0; gp < ngp; gp++) {
 
-		gp_t<tdim> *gp_ptr = &gp_list[gp];
+		gp_t *gp_ptr = &gp_list[gp];
 
 		double *tv_k = &dint_vars_k[num_int_vars * gp];
 		double *tu_k = &du_k[nndim *gp];
+		int tdim = dim;
 		int tnndim = nndim;
 
-		printf("%p %p %p\n", gp_ptr, tv_k, tu_k);
+		printf("%s:%d %p %p %p\n", __FILE__, __LINE__, gp_ptr, tv_k, tu_k);
 
-		set_gp<tdim>(tv_k, tu_k, tnndim, gp_ptr);
+		#pragma oss task out(gp_ptr) label(init_gp)
+		set_gp(tdim, tv_k, tu_k, tnndim, gp_ptr);
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
 		material_t material_tmp = _materials[i];
         printf("material_ptr: %p\n", material_ptr);
-		set_val<material_t>(material_tmp, material_ptr);
+
+        #pragma oss task out(material_ptr) firstprivate(material_tmp) label(set_material)
+        *material_ptr = material_tmp;
 
 	}
 
@@ -134,7 +135,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 				int *type_ptr = &elem_type[e_i];
 				int type = get_elem_type(ex, ey, ez);
 
-				set_val<int>(type, type_ptr);
+				#pragma oss task out(type_ptr) firstprivate(type) label(set_type)
+				*type_ptr = type;
 			}
 		}
 	}
@@ -161,8 +163,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	file.close();
 }
 
-template <int tdim>
-micropp<tdim>::~micropp()
+micropp::~micropp()
 {
 	if (copy)
 		return;
@@ -186,8 +187,7 @@ micropp<tdim>::~micropp()
 }
 
 
-template <int tdim>
-int micropp<tdim>::get_nl_flag(int gp_id) const
+int micropp::get_nl_flag(int gp_id) const
 {
 	assert(gp_id < ngp);
 	assert(gp_id >= 0);
@@ -195,8 +195,7 @@ int micropp<tdim>::get_nl_flag(int gp_id) const
 }
 
 
-template <int tdim>
-void micropp<tdim>::calc_ctan_lin()
+void micropp::calc_ctan_lin()
 {
 	double *u_aux = (double *) malloc(nndim * sizeof(double));
 	double *b = (double *) malloc(nndim * sizeof(double));
@@ -209,7 +208,9 @@ void micropp<tdim>::calc_ctan_lin()
 
 	for (int i = 0; i < nvoi; ++i) {
 
-		double eps_1[nvoi] = { 0.0 };
+		double *eps_1 = (double *) alloca(nvoi * sizeof(double));
+		memset(eps_1, 0, nvoi * sizeof(double));
+
 		eps_1[i] += D_EPS_CTAN_AVE;
 
 		double nr_err;
@@ -229,8 +230,7 @@ void micropp<tdim>::calc_ctan_lin()
 }
 
 
-template <int tdim>
-material_t micropp<tdim>::get_material(const int e) const
+material_t micropp::get_material(const int e) const
 {
 	int mat_num;
 	if (micro_type == 0) {
@@ -250,8 +250,7 @@ material_t micropp<tdim>::get_material(const int e) const
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
+void micropp::get_elem_rhs(const double *u, const double *old,
                                  double *be, int ex, int ey, int ez) const
 {
 	const int npedim = npe * dim;
@@ -261,7 +260,10 @@ void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
 
 	for (int gp = 0; gp < npe; ++gp) {
 
-		calc_bmat(gp, (double *) bmat);
+		if (dim == 3)
+			calc_bmat_3D(gp, (double *) bmat);
+		else
+			calc_bmat_2D(gp, (double *) bmat);
 
 		get_strain(u, gp, strain_gp, ex, ey, ez);
 		get_stress(gp, strain_gp, old, stress_gp, ex, ey, ez);
@@ -273,8 +275,7 @@ void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_elem_nodes(int *n, int ex, int ey, int ez) const
+void micropp::get_elem_nodes(int *n, int ex, int ey, int ez) const
 {
 	const int nxny = nx * ny;
 	const int n0 = ez * nxny + ey * nx + ex;
@@ -292,8 +293,7 @@ void micropp<tdim>::get_elem_nodes(int *n, int ex, int ey, int ez) const
 }
 
 
-template<int tdim>
-int micropp<tdim>::get_elem_type(int ex, int ey, int ez) const
+int micropp::get_elem_type(int ex, int ey, int ez) const
 {
 	assert(micro_type == 0 || micro_type == 1);
 
@@ -327,8 +327,7 @@ int micropp<tdim>::get_elem_type(int ex, int ey, int ez) const
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_elem_displ(const double *u,
+void micropp::get_elem_displ(const double *u,
 								   double *elem_disp,
 								   int ex, int ey, int ez) const
 {
@@ -341,15 +340,17 @@ void micropp<tdim>::get_elem_displ(const double *u,
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_strain(const double *u, int gp, double *strain_gp,
+void micropp::get_strain(const double *u, int gp, double *strain_gp,
 							   int ex, int ey, int ez) const
 {
 	double elem_disp[npe * dim];
 	get_elem_displ(u, elem_disp, ex, ey, ez);
 
 	double bmat[nvoi][npe * dim];
-	calc_bmat(gp, (double *) bmat);
+	if (dim == 3)
+		calc_bmat_3D(gp, (double *) bmat);
+	else
+		calc_bmat_2D(gp, (double *) bmat);
 
 	memset(strain_gp, 0, nvoi * sizeof(double));
 	for (int v = 0; v < nvoi; ++v)
@@ -358,8 +359,7 @@ void micropp<tdim>::get_strain(const double *u, int gp, double *strain_gp,
 }
 
 
-template <int tdim>
-void micropp<tdim>::print_info() const
+void micropp::print_info() const
 {
 	printf("micropp%d\n", dim);
 	printf("ngp %d n = [%d, %d, %d] => nn = %d\n", ngp, nx, ny, nz, nn);
@@ -373,8 +373,7 @@ void micropp<tdim>::print_info() const
 }
 
 
-template <int tdim>
-void micropp<tdim>::get_stress(int gp, const double *eps,
+void micropp::get_stress(int gp, const double *eps,
                                const double *old,
                                double *stress_gp,
                                int ex, int ey, int ez) const
@@ -388,18 +387,17 @@ void micropp<tdim>::get_stress(int gp, const double *eps,
 		const double *eps_p_old = &old[intvar_ix(e, gp, 0)];
 		const double alpha_old = old[intvar_ix(e, gp, 6)];
 
-		plastic_get_stress(&material, eps, eps_p_old, alpha_old, stress_gp);
+		plastic_get_stress_3D(&material, eps, eps_p_old, alpha_old, stress_gp);
 
 	} else {
 
-		isolin_get_stress(&material, eps, stress_gp);
+		isolin_get_stress_if(&material, eps, stress_gp);
 	}
 
 }
 
 
-template <int tdim>
-void micropp<tdim>::calc_ave_stress(const double *u, const double *old,
+void micropp::calc_ave_stress(const double *u, const double *old,
                                     double *stress_ave) const
 {
 	memset(stress_ave, 0, nvoi * sizeof(double));
@@ -408,7 +406,8 @@ void micropp<tdim>::calc_ave_stress(const double *u, const double *old,
 		for (int ey = 0; ey < ney; ++ey) {
 			for (int ex = 0; ex < nex; ++ex) {
 
-				double stress_aux[nvoi] = { 0.0 };
+				double *stress_aux = (double *) alloca(nvoi * sizeof(double));
+				memset(stress_aux, 0, nvoi * sizeof(double));
 
 				for (int gp = 0; gp < npe; ++gp) {
 
@@ -431,9 +430,8 @@ void micropp<tdim>::calc_ave_stress(const double *u, const double *old,
 }
 
 
-template <int tdim>
-void micropp<tdim>::calc_ave_strain(const double *u,
-									double *strain_ave) const
+void micropp::calc_ave_strain(const double *u,
+                              double *strain_ave) const
 {
 	memset(strain_ave, 0, nvoi * sizeof(double));
 
@@ -441,7 +439,8 @@ void micropp<tdim>::calc_ave_strain(const double *u,
 		for (int ey = 0; ey < ney; ++ey) {
 			for (int ex = 0; ex < nex; ++ex) {
 
-				double strain_aux[nvoi] = { 0.0 };
+				double *strain_aux = (double *) alloca(nvoi * sizeof(double));
+				memset(strain_aux, 0, nvoi * sizeof(double));
 
 				for (int gp = 0; gp < npe; ++gp) {
 					double strain_gp[nvoi];
@@ -462,15 +461,17 @@ void micropp<tdim>::calc_ave_strain(const double *u,
 }
 
 
-template<int tdim>
-void micropp<tdim>::calc_fields(const double *old, double *u) const
+void micropp::calc_fields(const double *old, double *u) const
 {
 	for (int ez = 0; ez < nez; ++ez) { // 2D -> nez = 1
 		for (int ey = 0; ey < ney; ++ey) {
 			for (int ex = 0; ex < nex; ++ex) {
 
-				double strain_aux[nvoi] = { 0.0 };
-				double stress_aux[nvoi] = { 0.0 };
+				double *strain_aux = (double *) alloca(nvoi * sizeof(double));
+				memset(strain_aux, 0, nvoi * sizeof(double));
+
+				double *stress_aux = (double *) alloca(nvoi * sizeof(double));
+				memset(stress_aux, 0, nvoi * sizeof(double));
 
 				for (int gp = 0; gp < npe; ++gp) {
 
@@ -495,8 +496,8 @@ void micropp<tdim>::calc_fields(const double *old, double *u) const
 	}
 }
 
-template<int tdim>
-bool micropp<tdim>::calc_vars_new(const double *u, const double *_old,
+
+bool micropp::calc_vars_new(const double *u, const double *_old,
                                double *_new) const
 {
     bool nl_flag = false;
@@ -517,7 +518,7 @@ bool micropp<tdim>::calc_vars_new(const double *u, const double *_old,
 					double eps[nvoi];
 					get_strain(u, gp, eps, ex, ey, ez);
 
-					nl_flag |= plastic_evolute(
+					nl_flag |= plastic_evolute_if(
 							&material, eps, eps_p_old, alpha_old, 
 							eps_p_new, alpha_new);
 				}
@@ -527,7 +528,3 @@ bool micropp<tdim>::calc_vars_new(const double *u, const double *_old,
 
 	return nl_flag;
 }
-
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;

@@ -28,7 +28,7 @@
 #include "micro.hpp"
 #include "ell.hpp"
 
-template <int tdim> class micropp;
+class micropp;
 
 #ifdef NANOS6
 
@@ -73,40 +73,28 @@ static inline void rrd_free(void *in)
 
 #endif
 
-#pragma oss task inout(_out[0]) label(init_gp)
-template <int tdim>
-void set_gp(double *_int_vars_k, double *_u_k, int tnndim, gp_t<tdim> *_out)
+inline void set_gp(int _tdim, double *_int_vars_k, double *_u_k, int tnndim, gp_t *_out)
 {
 	dprintf("Node: %d set_gp(%p) = {%p; %p}\n",
 	        get_node_id(), _out, _int_vars_k, _u_k);
-	_out[0].init(_int_vars_k, _u_k, tnndim);
+	_out->init(_tdim, _int_vars_k, _u_k, tnndim);
 }
 
 
-#pragma oss task out(_out[0])
-template <typename T>
-void set_val(T _in, T *_out)
-{
-	*_out = _in;
-}
-
-
-template <int tdim>
-void homogenize_conditional_task(micropp<tdim> self, int nvoi,
+void homogenize_conditional_task(micropp self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
-                                 gp_t<tdim> *gp_ptr,
+                                 gp_t *gp_ptr,
                                  int nndim, int num_int_vars,
                                  const bool allocated);
 
 
-template <int tdim>
-void homogenize_weak_task(micropp<tdim> self, int nvoi,
+void homogenize_weak_task(micropp self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
-                          gp_t<tdim> *gp_ptr, int nndim, int num_int_vars);
+                          gp_t *gp_ptr, int nndim, int num_int_vars);
 
 
 #endif //TASKS_HPP

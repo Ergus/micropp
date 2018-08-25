@@ -31,61 +31,61 @@ extern "C" {
 	}
 
 	//  Micro type functions
-	micropp<3> *init3_(int *ngp, const int size[3], const int *micro_type,
+	micropp *init_(int *dim, int *ngp, const int size[3], const int *micro_type,
 	                   const double *micro_params, const material_t *materials)
 	{
-		return new micropp<3>(*ngp, size, *micro_type, micro_params, materials);
+		return new micropp(*dim ,*ngp, size, *micro_type, micro_params, materials);
 	}
 
-	void free3_(micropp<3> **in)
+	void free_(micropp **in)
 	{
 		delete (*in);
 	}
 
-	void get_nl_flag3_(const micropp<3> **self, int *gp_id, int *nl_flag)
+	void get_nl_flag_(const micropp **self, int *gp_id, int *nl_flag)
 	{
 		(*nl_flag) = (*self)->get_nl_flag(*gp_id);
 	}
 
-	void set_macro_strain3_(micropp<3> **self, const int *gp_id,
+	void set_macro_strain_(micropp **self, const int *gp_id,
 	                        const double *macro_strain)
 	{
 		(*self)->set_macro_strain(*gp_id, macro_strain);
 	}
 
-	void get_macro_stress3_(const micropp<3> **self,
+	void get_macro_stress_(const micropp **self,
 	                        const int *gp_id, double *macro_stress)
 	{
 		(*self)->get_macro_stress(*gp_id, macro_stress);
 	}
 
-	void get_macro_ctan3_(const micropp<3> **self, const int *gp_id,
+	void get_macro_ctan_(const micropp **self, const int *gp_id,
 	                     double *macro_ctan)
 	{
 		(*self)->get_macro_ctan(*gp_id, macro_ctan);
 	}
 
-	void homogenize3_(micropp<3> **self)
+	void homogenize3_(micropp **self)
 	{
 		(*self)->homogenize();
 	}
 
-	void update_vars3_(micropp<3> **self)
+	void update_vars3_(micropp **self)
 	{
 		(*self)->update_vars();
 	}
 
-	void output3_(micropp<3> **self, int *tstep, int *gp_id)
+	void output3_(micropp **self, int *tstep, int *gp_id)
 	{
 		(*self)->output(*tstep, *gp_id);
 	}
 
-	void write_info_files3_(micropp<3> **self)
+	void write_info_files3_(micropp **self)
 	{
 		(*self)->write_info_files();
 	}
 
-	void print_info3_(micropp<3> **self)
+	void print_info3_(micropp **self)
 	{
 		printf("ptr2 %p\n", self);
 		(*self)->print_info();

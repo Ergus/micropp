@@ -1,7 +1,7 @@
 /*
  *  This is a test example for MicroPP: a finite element library
  *  to solve microstructural problems for composite materials.
- *
+kkk *
  *  Copyright (C) - 2018 - Jimmy Aguilar Mena <kratsbinovish@gmail.com>
  *                         Guido Giuntoli <gagiuntoli@gmail.com>
  *
@@ -54,7 +54,7 @@ int main (int argc, char *argv[])
 	mat_params[0].set(1.0e6, 0.3, 5.0e4, 5.0e4, 1);
 	mat_params[1].set(1.0e6, 0.3, 1.0e4, 0.0e-1, 0);
 
-	micropp<3> micro(1, size, micro_type, micro_params, mat_params);
+	micropp micro(3, 1, size, micro_type, micro_params, mat_params);
 
 	double eps[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 	double sig[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };

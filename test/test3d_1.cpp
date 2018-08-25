@@ -12,7 +12,7 @@
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+k *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
@@ -53,7 +53,7 @@ int main (int argc, char *argv[])
 	mat_params[0].set(3.0e7, 0.25, 1.0e0, 2.0e5, 1);
 	mat_params[1].set(3.0e7, 0.25, 1.0e5, 2.0e5, 0);
 
-	micropp<3> micro(1, size, micro_type, micro_params, mat_params);
+	micropp micro(3, 1, size, micro_type, micro_params, mat_params);
 	micro.print_info();
 
 	double sig[6], ctan[36];
