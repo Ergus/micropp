@@ -56,13 +56,13 @@
 
 using namespace std;
 
-struct data {
-	protected:
-		data(const int tdim, const int ngp, const int size[3],
-		     const int micro_type, const double *micro_params,
-		     const material_t *materials);
-
+template <int tdim>
+class micropp {
 	public:
+		int dim;   // 2, 3
+		int npe;   // 4, 8
+		int nvoi;  // 3, 6
+
 		// Constants only vars
 		int ngp, nx, ny, nz, nn, nndim;
 		int nex, ney, nez, nelem;
@@ -90,17 +90,9 @@ struct data {
 		int ell_cols_size;
 
 		double *du_k, *dint_vars_k;
-};
 
-template <int tdim>
-class micropp : public data {
-	private:
-	public:
-		// Variables (static constexpr)
-		static constexpr int dim = tdim;                   // 2, 3
-		static constexpr int npe = mypow(2, tdim);         // 4, 8
-		static constexpr int nvoi = tdim * (tdim + 1) / 2;  // 3, 6
-		const bool copy;
+		bool copy;
+
 
 		gp_t<tdim> *gp_list;
 
@@ -110,48 +102,46 @@ class micropp : public data {
 		material_t get_material(const int e) const;
 
 		void get_strain(const double *u, int gp,
-						double strain_gp[nvoi],
+						double *strain_gp,
 						int ex, int ey, int ez = 0) const;
 
-		void get_elem_nodes(int n[npe], int ex, int ey, int ez = 0) const;
+		void get_elem_nodes(int *n, int ex, int ey, int ez = 0) const;
 
-		void get_elem_displ(const double *u, double elem_disp[npe * dim],
+		void get_elem_displ(const double *u, double *elem_disp,
 							int ex, int ey, int ez = 0) const;
 
-		void get_stress(int gp, const double eps[nvoi], const double *old,
-		                double stress_gp[nvoi],
+		void get_stress(int gp, const double *eps, const double *old,
+		                double *stress_gp,
 		                int ex, int ey, int ez = 0) const;
 
 		int get_elem_type(int ex, int ey, int ez = 0) const;
 
 		void get_elem_rhs(const double *u, const double *old,
-		                  double be[npe * dim],
-		                  int ex, int ey, int ez = 0) const;
+		                  double *be, int ex, int ey, int ez = 0) const;
 
 		void calc_ave_stress(const double *u, const double *out,
-		                     double stress_ave[nvoi]) const;
+		                     double *stress_ave) const;
 
-		void calc_ave_strain(const double *u, double strain_ave[nvoi]) const;
+		void calc_ave_strain(const double *u, double *strain_ave) const;
 
 
 		void calc_fields(const double *old, double *u) const;
 
-		int newton_raphson(const double strain[nvoi], ell_matrix *A, double *u,
+		int newton_raphson(const double *strain, ell_matrix *A, double *u,
 		                   double *b, double *du, double *old,
 		                   double *_err) const;
 
 		// Specialized
 		template <typename... Rest>
 		void get_elem_mat(const double *u, const double *old,
-		                  double Ae[npe * dim * npe * dim],
-		                  int ex, int ey, Rest...) const;
+		                  double *Ae, int ex, int ey, Rest...) const;
 
-		void set_displ_bc(const double strain[nvoi], double *u) const;
+		void set_displ_bc(const double *strain, double *u) const;
 
 		double assembly_rhs(const double *u, const double *old, double *b) const;
 		void assembly_mat(const double *u, const double *old, ell_matrix *A) const;
 
-		void calc_bmat(int gp, double bmat[nvoi][npe * dim]) const;
+		void calc_bmat(int gp, double *bmat) const;
 
 		bool calc_vars_new(const double *u, const double *_old, double *_new) const;
 
@@ -189,7 +179,8 @@ class micropp : public data {
 		micropp(const int ngp, const int size[3], const int micro_type,
 		        const double *micro_params, const material_t *materials);
 
-		micropp(data *in, gp_t<tdim> *list);
+		micropp(micropp<tdim> *in);
+		micropp(const micropp<tdim> &in);
 
 		~micropp();
 

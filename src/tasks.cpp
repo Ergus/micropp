@@ -22,7 +22,7 @@
 #include "tasks.hpp"
 
 template <int tdim>
-void homogenize_conditional_task(struct data self_data, int nvoi,
+void homogenize_conditional_task(micropp<tdim> self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
@@ -31,8 +31,6 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
                                  const bool allocated)
 {
 	dprintf("Nanos cluster %d/%d \n", get_node_id(), get_nodes_nr());
-
-	micropp<tdim> self(&self_data, gp_ptr);
 
 	double *u_n = (double *) malloc(nndim * sizeof(double));
 	double *vnew = (double *) malloc(num_int_vars * sizeof(double));
@@ -110,7 +108,7 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
 
 
 template <int tdim>
-void homogenize_weak_task(data self, int nvoi,
+void homogenize_weak_task(micropp<tdim> self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
@@ -188,7 +186,7 @@ template class micropp<2>;
 template class micropp<3>;
 
 template
-void homogenize_conditional_task<2>(struct data self, const int nvoi,
+void homogenize_conditional_task<2>(micropp<2> self, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, const int nelem,
@@ -198,7 +196,7 @@ void homogenize_conditional_task<2>(struct data self, const int nvoi,
 
 
 template
-void homogenize_conditional_task<3>(struct data self, const int nvoi,
+void homogenize_conditional_task<3>(micropp<3> self, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, const int nelem,
@@ -208,14 +206,14 @@ void homogenize_conditional_task<3>(struct data self, const int nvoi,
 
 
 template
-void homogenize_weak_task<2>(data self, int nvoi,
+void homogenize_weak_task<2>(micropp<2> self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
                           gp_t<2> *gp_ptr, int nndim, int num_int_vars);
 
 template
-void homogenize_weak_task<3>(data self, int nvoi,
+void homogenize_weak_task<3>(micropp<3> self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,

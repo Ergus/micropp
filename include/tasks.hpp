@@ -28,6 +28,8 @@
 #include "micro.hpp"
 #include "ell.hpp"
 
+template <int tdim> class micropp;
+
 #ifdef NANOS6
 
 #include "nanos6.h"
@@ -90,7 +92,7 @@ void set_val(T _in, T *_out)
 
 
 template <int tdim>
-void homogenize_conditional_task(struct data self, int nvoi,
+void homogenize_conditional_task(micropp<tdim> self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
@@ -100,7 +102,7 @@ void homogenize_conditional_task(struct data self, int nvoi,
 
 
 template <int tdim>
-void homogenize_weak_task(data self, int nvoi,
+void homogenize_weak_task(micropp<tdim> self, int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,

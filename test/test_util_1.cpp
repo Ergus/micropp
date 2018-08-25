@@ -32,26 +32,24 @@ using namespace std;
 
 int main (int argc, char *argv[])
 {
-	const double a1[2][2] = {
-		{  10.66, -2.66 },
-		{ -2.66,   10.66 } };
+	const double a1[] = { 10.66, -2.66,
+	                          -2.66, 10.66 };
 	const double v1[2] = { 47.1, -11.39 };
 	const double s2_exact[2] = { 532.3834, -246.7034 };
 	double s2[2];
 
-	mvp_2(a1, v1, s2);
+	mvp(2, a1, v1, s2);
 	for (int i = 0; i < 2; ++i)
 		assert(fabs(s2[i] - s2_exact[i]) < 1.0e-10);
 
-	const double a3[3][3] = {
-		{  10.66, -2.66   , 8.3},
-		{  10.66, -2.66   , 1.9},
-		{ -2.66,  -10.66  , 7.2} };
+	const double a3[] = { 10.66,  -2.66, 8.3,
+	                      10.66,  -2.66, 1.9,
+	                      -2.66, -10.66, 7.2 };
 	const double v3[3] = { -1.22, 7.1, -11.39 };
 	const double s3_exact[3] = { -126.4282, -53.53220, -154.4488 };
 	double s3[3];
 
-	mvp_3(a3, v3, s3);
+	mvp(3, a3, v3, s3);
 	for (int i = 0; i < 3; ++i)
 		assert(fabs(s3[i] - s3_exact[i]) < 1.0e-10);
 

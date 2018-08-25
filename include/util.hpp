@@ -65,35 +65,14 @@ inline void print_vec(const double *vec, int n, const char file_name[])
 	fclose(file);
 }
 
-inline void mvp_2(const double m[2][2], const double x[2], double y[2])
+inline void mvp(const int dim, const double *m, const double *x, double *y)
 {
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < dim; ++i) {
 		double tmp = 0.0;
-		for (int j = 0; j < 2; ++j)
-			tmp += m[i][j] * x[j];
+		for (int j = 0; j < dim; ++j)
+			tmp += m[i * dim + j] * x[j];
 		y[i] = tmp;
 	}
 }
-
-inline void mvp_3(const double m[2][2], const double x[2], double y[2])
-{
-	for (int i = 0; i < 2; ++i) {
-		double tmp = 0.0;
-		for (int j = 0; j < 2; ++j)
-			tmp += m[i][j] * x[j];
-		y[i] = tmp;
-	}
-}
-
-inline void mvp_3(const double m[3][3], const double x[3], double y[3])
-{
-	for (int i = 0; i < 3; ++i) {
-		double tmp = 0.0;
-		for (int j = 0; j < 3; ++j)
-			tmp += m[i][j] * x[j];
-		y[i] = tmp;
-	}
-}
-
 
 #endif //UTIL_HPP

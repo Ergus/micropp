@@ -21,8 +21,30 @@ k *  You should have received a copy of the GNU General Public License
 
 #include "micro.hpp"
 
-data::data(const int tdim, const int _ngp, const int size[3], const int _micro_type,
-           const double _micro_params[5], const material_t *_materials):
+template<int tdim>
+micropp<tdim>::micropp(micropp<tdim> *in)
+{
+	memcpy(this, in, sizeof(micropp<tdim>));
+	copy = true;
+}
+
+
+template<int tdim>
+micropp<tdim>::micropp(const micropp<tdim> &in)
+{
+	memcpy(this, &in, sizeof(micropp<tdim>));
+	copy = true;
+}
+
+template<int tdim>
+micropp<tdim>::micropp(const int _ngp, const int size[3],
+                       const int _micro_type,
+                       const double _micro_params[5],
+                       const material_t *_materials) :
+	dim(tdim),                    // 2, 3
+	npe(mypow(2, tdim)),          // 4, 8
+	nvoi(tdim * (tdim + 1) / 2),  // 3, 6
+
 	ngp(_ngp),
 	nx(size[0]), ny(size[1]),
 	nz((tdim == 3) ? size[2] : 1),
@@ -45,25 +67,10 @@ data::data(const int tdim, const int _ngp, const int size[3], const int _micro_t
 	vol_tot((tdim == 3) ? lx * ly * lz : lx * ly),
 	ivol(1.0 / (wg * mypow(2, tdim))),
 	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP),
-	ell_cols_size(mypow(3, tdim) * tdim * nn * tdim)
-{
-	output_files_header = false;
-}
+	ell_cols_size(mypow(3, tdim) * tdim * nn * tdim),
 
-#
-template<int tdim>
-micropp<tdim>::micropp(data *in, gp_t<tdim> *list) :
-	data(*in), gp_list(list), copy(true)
-{}
-
-
-template<int tdim>
-micropp<tdim>::micropp(const int _ngp, const int size[3],
-                       const int _micro_type,
-                       const double _micro_params[5],
-                       const material_t *_materials) :
-	data(tdim, _ngp, size, _micro_type, _micro_params, _materials),
-	copy(false)
+	copy(false),
+	output_files_header(false)
 {
 	INST_CONSTRUCT; // Initialize the Intrumentation
 	// Material list Here
@@ -245,17 +252,17 @@ material_t micropp<tdim>::get_material(const int e) const
 
 template <int tdim>
 void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
-                                 double be[npe * dim],
+                                 double *be,
                                  int ex, int ey, int ez) const
 {
-	constexpr int npedim = npe * dim;
+	const int npedim = npe * dim;
 	double bmat[nvoi][npedim], stress_gp[nvoi], strain_gp[nvoi];
 
 	memset(be, 0, npedim * sizeof(double));
 
 	for (int gp = 0; gp < npe; ++gp) {
 
-		calc_bmat(gp, bmat);
+		calc_bmat(gp, (double *) bmat);
 
 		get_strain(u, gp, strain_gp, ex, ey, ez);
 		get_stress(gp, strain_gp, old, stress_gp, ex, ey, ez);
@@ -268,7 +275,7 @@ void micropp<tdim>::get_elem_rhs(const double *u, const double *old,
 
 
 template <int tdim>
-void micropp<tdim>::get_elem_nodes(int n[npe], int ex, int ey, int ez) const
+void micropp<tdim>::get_elem_nodes(int *n, int ex, int ey, int ez) const
 {
 	const int nxny = nx * ny;
 	const int n0 = ez * nxny + ey * nx + ex;
@@ -323,7 +330,7 @@ int micropp<tdim>::get_elem_type(int ex, int ey, int ez) const
 
 template <int tdim>
 void micropp<tdim>::get_elem_displ(const double *u,
-								   double elem_disp[npe * dim],
+								   double *elem_disp,
 								   int ex, int ey, int ez) const
 {
 	int n[npe] ;
@@ -343,7 +350,7 @@ void micropp<tdim>::get_strain(const double *u, int gp, double *strain_gp,
 	get_elem_displ(u, elem_disp, ex, ey, ez);
 
 	double bmat[nvoi][npe * dim];
-	calc_bmat(gp, bmat);
+	calc_bmat(gp, (double *) bmat);
 
 	memset(strain_gp, 0, nvoi * sizeof(double));
 	for (int v = 0; v < nvoi; ++v)
@@ -368,9 +375,9 @@ void micropp<tdim>::print_info() const
 
 
 template <int tdim>
-void micropp<tdim>::get_stress(int gp, const double eps[nvoi],
+void micropp<tdim>::get_stress(int gp, const double *eps,
                                const double *old,
-                               double stress_gp[nvoi],
+                               double *stress_gp,
                                int ex, int ey, int ez) const
 {
 	const int e = glo_elem(ex, ey, ez);
@@ -427,7 +434,7 @@ void micropp<tdim>::calc_ave_stress(const double *u, const double *old,
 
 template <int tdim>
 void micropp<tdim>::calc_ave_strain(const double *u,
-									double strain_ave[nvoi]) const
+									double *strain_ave) const
 {
 	memset(strain_ave, 0, nvoi * sizeof(double));
 

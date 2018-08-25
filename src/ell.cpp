@@ -271,8 +271,6 @@ void ell_add_2D(ell_matrix *m, int ex, int ey, const double *Ae)
 	// assembly Ae in 2D structured grid representation
 	// nFields : number of scalar components on each node
 
-	INST_START;
-
 	const int nx = m->n[0];
 	const int ny = m->n[1];
 	const int nfield = m->nfield;
@@ -306,8 +304,6 @@ void ell_add_3D(ell_matrix *m, int ex, int ey, int ez, const double *Ae)
 {
 	// assembly Ae in 3D structured grid representation
 	// nFields : number of scalar components on each node
-
-	INST_START;
 
 	const int nx = m->n[0];
 	const int ny = m->n[1];

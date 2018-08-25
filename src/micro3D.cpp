@@ -23,19 +23,18 @@
 
 
 template <>
-void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
+void micropp<3>::set_displ_bc(const double *eps, double *u) const
 {
-	const double eps_t[dim][dim] = {
-		{       eps[0], 0.5 * eps[3], 0.5 * eps[4] },
-		{ 0.5 * eps[3],       eps[1], 0.5 * eps[5] },
-		{ 0.5 * eps[4], 0.5 * eps[5],       eps[2] } };
+	const double eps_t[] = {       eps[0], 0.5 * eps[3], 0.5 * eps[4] ,
+	                         0.5 * eps[3],       eps[1], 0.5 * eps[5] ,
+	                         0.5 * eps[4], 0.5 * eps[5],       eps[2] };
 
 
 	for (int i = 0; i < nx; ++i) {
 		for (int j = 0; j < ny; ++j) {
 			const int n = nod_index3D(i, j, 0); // z = 0
 			const double coor[3] = { i * dx, j * dy, 0 };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 
@@ -43,7 +42,7 @@ void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
 		for (int j = 0; j < ny; ++j) {
 			const int n = nod_index3D(i, j, nz - 1); // z = lz
 			const double coor[3] = { i * dx, j * dy, lz };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 
@@ -51,7 +50,7 @@ void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
 		for (int k = 1; k < nz - 1; ++k) {
 			const int n = nod_index3D(i, 0, k); // y = 0
 			const double coor[3] = { i * dx, 0, k * dz };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 
@@ -59,7 +58,7 @@ void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
 		for (int k = 1; k < nz - 1; ++k) {
 			const int n = nod_index3D(i, ny - 1, k); // y = ly
 			const double coor[3] = { i * dx, ly , k * dz };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 
@@ -67,7 +66,7 @@ void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
 		for (int k = 1; k < nz - 1; ++k) {
 			const int n = nod_index3D(0, j, k); // x = 0
 			const double coor[3] = { 0, j * dy , k * dz };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 
@@ -75,25 +74,25 @@ void micropp<3>::set_displ_bc(const double eps[nvoi], double *u) const
 		for (int k = 1; k < nz - 1; ++k) {
 			const int n = nod_index3D(nx - 1, j, k); // x = lx
 			const double coor[3] = { ly, j * dy , k * dz };
-			mvp_3(eps_t, coor, &u[n * dim]);
+			mvp(dim, eps_t, coor, &u[n * dim]);
 		}
 	}
 }
 
 
 template <>
-void micropp<3>::calc_bmat(int gp, double bmat[nvoi][npe * dim]) const
+void micropp<3>::calc_bmat(int gp, double *bmat) const
 {
-	INST_START;
+	const int npedim = npe * dim;
 
-	constexpr double xg[npe][dim] = { { -CONSTXG, -CONSTXG, -CONSTXG },
-	                                  { +CONSTXG, -CONSTXG, -CONSTXG },
-	                                  { +CONSTXG, +CONSTXG, -CONSTXG },
-	                                  { -CONSTXG, +CONSTXG, -CONSTXG },
-	                                  { -CONSTXG, -CONSTXG, +CONSTXG },
-	                                  { +CONSTXG, -CONSTXG, +CONSTXG },
-	                                  { +CONSTXG, +CONSTXG, +CONSTXG },
-	                                  { -CONSTXG, +CONSTXG, +CONSTXG } };
+	const double xg[npe][dim] = { { -CONSTXG, -CONSTXG, -CONSTXG },
+	                              { +CONSTXG, -CONSTXG, -CONSTXG },
+	                              { +CONSTXG, +CONSTXG, -CONSTXG },
+	                              { -CONSTXG, +CONSTXG, -CONSTXG },
+	                              { -CONSTXG, -CONSTXG, +CONSTXG },
+	                              { +CONSTXG, -CONSTXG, +CONSTXG },
+	                              { +CONSTXG, +CONSTXG, +CONSTXG },
+	                              { -CONSTXG, +CONSTXG, +CONSTXG } };
 
 	const double dsh[npe][dim] = {
 		{ -(1 - xg[gp][1]) * (1 - xg[gp][2]) / 8. * 2. / dx,
@@ -122,24 +121,24 @@ void micropp<3>::calc_bmat(int gp, double bmat[nvoi][npe * dim]) const
 		  +(1 - xg[gp][0]) * (1 + xg[gp][1]) / 8. * 2. / dz } };
 
 	for (int i = 0; i < npe; ++i) {
-		bmat[0][i * dim    ] = dsh[i][0];
-		bmat[0][i * dim + 1] = 0;
-		bmat[0][i * dim + 2] = 0;
-		bmat[1][i * dim    ] = 0;
-		bmat[1][i * dim + 1] = dsh[i][1];
-		bmat[1][i * dim + 2] = 0;
-		bmat[2][i * dim    ] = 0;
-		bmat[2][i * dim + 1] = 0;
-		bmat[2][i * dim + 2] = dsh[i][2];
-		bmat[3][i * dim    ] = dsh[i][1];
-		bmat[3][i * dim + 1] = dsh[i][0];
-		bmat[3][i * dim + 2] = 0;
-		bmat[4][i * dim    ] = dsh[i][2];
-		bmat[4][i * dim + 1] = 0;
-		bmat[4][i * dim + 2] = dsh[i][0];
-		bmat[5][i * dim    ] = 0;
-		bmat[5][i * dim + 1] = dsh[i][2];
-		bmat[5][i * dim + 2] = dsh[i][1];
+		bmat[0 * npedim + i * dim    ] = dsh[i][0];
+		bmat[0 * npedim + i * dim + 1] = 0;
+		bmat[0 * npedim + i * dim + 2] = 0;
+		bmat[1 * npedim + i * dim    ] = 0;
+		bmat[1 * npedim + i * dim + 1] = dsh[i][1];
+		bmat[1 * npedim + i * dim + 2] = 0;
+		bmat[2 * npedim + i * dim    ] = 0;
+		bmat[2 * npedim + i * dim + 1] = 0;
+		bmat[2 * npedim + i * dim + 2] = dsh[i][2];
+		bmat[3 * npedim + i * dim    ] = dsh[i][1];
+		bmat[3 * npedim + i * dim + 1] = dsh[i][0];
+		bmat[3 * npedim + i * dim + 2] = 0;
+		bmat[4 * npedim + i * dim    ] = dsh[i][2];
+		bmat[4 * npedim + i * dim + 1] = 0;
+		bmat[4 * npedim + i * dim + 2] = dsh[i][0];
+		bmat[5 * npedim + i * dim    ] = 0;
+		bmat[5 * npedim + i * dim + 1] = dsh[i][2];
+		bmat[5 * npedim + i * dim + 2] = dsh[i][1];
 	}
 }
 
@@ -231,15 +230,14 @@ double micropp<3>::assembly_rhs(const double *u, const double *old,
 template <>
 template <>
 void micropp<3>::get_elem_mat(const double *u, const double *old,
-		double Ae[npe * dim * npe * dim], int ex, int ey, int ez) const
+		double *Ae, int ex, int ey, int ez) const
 {
-	INST_START;
 	const int e = glo_elem(ex, ey, ez);
 	const material_t material = get_material(e);
 
-	double ctan[nvoi][nvoi];
-	constexpr int npedim = npe * dim;
-	constexpr int npedim2 = npedim * npedim;
+	double ctan[6][6];
+	const int npedim = npe * dim;
+	const int npedim2 = npedim * npedim;
 
 	double TAe[npedim2] = { 0.0 };
 
@@ -258,7 +256,7 @@ void micropp<3>::get_elem_mat(const double *u, const double *old,
 			isolin_get_ctan(&material, ctan);
 
 		double bmat[nvoi][npedim], cxb[nvoi][npedim];
-		calc_bmat(gp, bmat);
+		calc_bmat(gp, (double *) bmat);
 
 		for (int i = 0; i < nvoi; ++i) {
 			for (int j = 0; j < npedim; ++j) {
@@ -286,8 +284,6 @@ template <>
 void micropp<3>::assembly_mat(const double *u, const double *old,
                               ell_matrix *A) const
 {
-	INST_START;
-
 	ell_set_zero_mat(A);
 
 	double Ae[npe * dim * npe * dim];

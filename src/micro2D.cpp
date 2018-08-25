@@ -23,34 +23,34 @@
 
 
 template <>
-void micropp<2>::set_displ_bc(const double eps[nvoi], double *u) const
+void micropp<2>::set_displ_bc(const double *eps, double *u) const
 {
-	const double eps_t[dim][dim] =
-		{ {       eps[0], 0.5 * eps[2] },
-		  { 0.5 * eps[2],       eps[1] } };
+	const double eps_t[] = {       eps[0], 0.5 * eps[2],
+	                         0.5 * eps[2],       eps[1] };
+
 
 	for (int i = 0; i < nx; ++i) {
 		const int n = nod_index(i, 0, 0); // y = 0
 		const double coor[2] = { i * dx, 0 };
-		mvp_2(eps_t, coor, &u[n * dim]);
+		mvp(dim, eps_t, coor, &u[n * dim]);
 	}
 
 	for (int i = 0; i < nx; ++i) {
 		const int n = nod_index(i, ny - 1, 0); // y = ly
 		const double coor[2] = { i * dx, ly };
-		mvp_2(eps_t, coor, &u[n * dim]);
+		mvp(dim, eps_t, coor, &u[n * dim]);
 	}
 
 	for (int j = 1; j < ny - 1; ++j) {
 		const int n = nod_index(0, j, 0); // x = 0
 		const double coor[2] = { 0, j * dy };
-		mvp_2(eps_t, coor, &u[n * dim]);
+		mvp(dim, eps_t, coor, &u[n * dim]);
 	}
 
 	for (int j = 1; j < ny - 1; ++j) {
 		const int n = nod_index(nx - 1, j, 0); // x = lx
 		const double coor[2] = { lx, j * dy };
-		mvp_2(eps_t, coor, &u[n * dim]);
+		mvp(dim, eps_t, coor, &u[n * dim]);
 	}
 }
 
@@ -79,13 +79,14 @@ void micropp<2>::isolin_get_stress(
 
 
 template <>
-void micropp<2>::calc_bmat(int gp, double bmat[nvoi][npe *dim])	const
+void micropp<2>::calc_bmat(int gp, double *bmat)	const
 {
+	const int npedim = npe * dim;
 
-	constexpr double xg[npe][dim] = { { -CONSTXG, -CONSTXG },
-	                                  { +CONSTXG, -CONSTXG },
-	                                  { +CONSTXG, +CONSTXG },
-	                                  { -CONSTXG, +CONSTXG } };
+	const double xg[npe][dim] = { { -CONSTXG, -CONSTXG },
+	                              { +CONSTXG, -CONSTXG },
+	                              { +CONSTXG, +CONSTXG },
+	                              { -CONSTXG, +CONSTXG } };
 
 	const double dsh[npe][dim] = {
 		{ -(1 - xg[gp][1]) / 4 * 2 / dx,
@@ -98,12 +99,12 @@ void micropp<2>::calc_bmat(int gp, double bmat[nvoi][npe *dim])	const
 		  +(1 - xg[gp][0]) / 4 * 2 / dy } };
 
 	for (int i = 0; i < npe; ++i) {
-		bmat[0][i * dim    ] = dsh[i][0];
-		bmat[0][i * dim + 1] = 0;
-		bmat[1][i * dim    ] = 0;
-		bmat[1][i * dim + 1] = dsh[i][1];
-		bmat[2][i * dim    ] = dsh[i][1];
-		bmat[2][i * dim + 1] = dsh[i][0];
+		bmat[0 * npedim + i * dim    ] = dsh[i][0];
+		bmat[0 * npedim + i * dim + 1] = 0;
+		bmat[1 * npedim + i * dim    ] = 0;
+		bmat[1 * npedim + i * dim + 1] = dsh[i][1];
+		bmat[2 * npedim + i * dim    ] = dsh[i][1];
+		bmat[2 * npedim + i * dim + 1] = dsh[i][0];
 	}
 }
 
@@ -168,17 +169,16 @@ double micropp<2>::assembly_rhs(const double *u, const double *old,
 template <>
 template <>
 void micropp<2>::get_elem_mat(const double *u, const double *old,
-		double Ae[npe * dim * npe * dim], int ex, int ey) const
+		double *Ae, int ex, int ey) const
 {
-	INST_START;
 	const int e = glo_elem(ex, ey, 0);
 	const material_t material = get_material(e);
 
 	const double E = material.E;
 	const double nu = material.nu;
 	const bool plasticity = material.plasticity;
-	constexpr int npedim = npe * dim;
-	constexpr int npedim2 = npedim * npedim;
+	const int npedim = npe * dim;
+	const int npedim2 = npedim * npedim;
 
 	double ctan[nvoi][nvoi] = {{(1 - nu),     nu,             0 },
 	                           {      nu, (1 - nu),           0 },
@@ -194,7 +194,7 @@ void micropp<2>::get_elem_mat(const double *u, const double *old,
 
 		double bmat[nvoi][npedim], cxb[nvoi][npedim];
 
-		calc_bmat(gp, bmat);
+		calc_bmat(gp, (double *) bmat);
 
 		for (int i = 0; i < nvoi; ++i) {
 			for (int j = 0; j < npedim; ++j) {
@@ -222,8 +222,6 @@ template <>
 void micropp<2>::assembly_mat(const double *u, const double *old,
                               ell_matrix *A) const
 {
-	INST_START;
-
 	ell_set_zero_mat(A);
 
 	double Ae[npe * dim * npe * dim];

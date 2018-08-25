@@ -25,7 +25,7 @@ using namespace std;
 
 
 template <int tdim>
-int micropp<tdim>::newton_raphson(const double strain[nvoi], ell_matrix *A,
+int micropp<tdim>::newton_raphson(const double *strain, ell_matrix *A,
                                   double *u, double *b, double *du, double *old,
                                   double *_err) const
 {
