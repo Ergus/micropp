@@ -71,8 +71,6 @@ void micropp::homogenize()
 		int nndim_tmp = nndim;
 		int num_int_vars_tmp = num_int_vars;
 
-		printf("%d %p %p\n", gp, gp_ptr, gp_ptr->u_k);
-
 		#pragma oss task in(ell_cols_ptr[0; ell_cols_size_tmp]) \
 			in(material_ptr[0; numMaterials_tmp]) \
 			in(elem_type_ptr[0; nelem_tmp]) \

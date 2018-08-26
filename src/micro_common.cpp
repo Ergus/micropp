@@ -86,11 +86,8 @@ micropp::micropp(const int tdim, const int _ngp, const int size[3],
 
 	// Common permanent arrays
 	gp_list = (gp_t *) rrd_malloc(ngp * sizeof(gp_t));
-
-	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
-    printf("region: [%p,%p)\n", material_list, material_list + numMaterials);
-
 	elem_type = (int *) rrd_malloc(nelem * sizeof(int));
+	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
 
 	// Shared arrays for gp
 	du_k = (double *) rrd_malloc(ngp * nndim * sizeof(double));
@@ -110,18 +107,16 @@ micropp::micropp(const int tdim, const int _ngp, const int size[3],
 		int tdim = dim;
 		int tnndim = nndim;
 
-		printf("%s:%d %p %p %p\n", __FILE__, __LINE__, gp_ptr, tv_k, tu_k);
+		#pragma oss task out(gp_ptr[0]) label(init_gp)
+		gp_ptr->init(tdim, tv_k, tu_k, tnndim);
 
-		#pragma oss task out(gp_ptr) label(init_gp)
-		set_gp(tdim, tv_k, tu_k, tnndim, gp_ptr);
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
 		material_t material_tmp = _materials[i];
-        printf("material_ptr: %p\n", material_ptr);
 
-        #pragma oss task out(material_ptr) firstprivate(material_tmp) label(set_material)
+		#pragma oss task out(material_ptr[0]) label(set_material)
         *material_ptr = material_tmp;
 
 	}
@@ -135,7 +130,7 @@ micropp::micropp(const int tdim, const int _ngp, const int size[3],
 				int *type_ptr = &elem_type[e_i];
 				int type = get_elem_type(ex, ey, ez);
 
-				#pragma oss task out(type_ptr) firstprivate(type) label(set_type)
+				#pragma oss task out(type_ptr[0]) firstprivate(type) label(set_type)
 				*type_ptr = type;
 			}
 		}

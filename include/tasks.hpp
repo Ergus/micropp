@@ -73,14 +73,6 @@ static inline void rrd_free(void *in)
 
 #endif
 
-inline void set_gp(int _tdim, double *_int_vars_k, double *_u_k, int tnndim, gp_t *_out)
-{
-	dprintf("Node: %d set_gp(%p) = {%p; %p}\n",
-	        get_node_id(), _out, _int_vars_k, _u_k);
-	_out->init(_tdim, _int_vars_k, _u_k, tnndim);
-}
-
-
 void homogenize_conditional_task(micropp self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,

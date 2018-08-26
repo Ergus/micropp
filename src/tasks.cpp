@@ -141,12 +141,10 @@ void homogenize_weak_task(micropp self, int nvoi,
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr) \
+				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
 			{
-				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
-				gp_ptr->print();
 			homogenize_conditional_task(self, nvoi,
 			                            ell_cols, ell_cols_size,
 			                            material_list, numMaterials,
@@ -162,12 +160,10 @@ void homogenize_weak_task(micropp self, int nvoi,
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr) \
+				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
 			{
-				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
-				gp_ptr->print();
 			homogenize_conditional_task(self, nvoi,
 			                            ell_cols, ell_cols_size,
 			                            material_list, numMaterials,
