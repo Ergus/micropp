@@ -145,7 +145,7 @@ void homogenize_weak_task(data self, int nvoi,
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr) \
+				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
 			{
@@ -166,7 +166,7 @@ void homogenize_weak_task(data self, int nvoi,
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr) \
+				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
 			{

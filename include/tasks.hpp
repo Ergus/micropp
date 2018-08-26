@@ -71,24 +71,6 @@ static inline void rrd_free(void *in)
 
 #endif
 
-#pragma oss task inout(_out[0]) label(init_gp)
-template <int tdim>
-void set_gp(double *_int_vars_k, double *_u_k, int tnndim, gp_t<tdim> *_out)
-{
-	dprintf("Node: %d set_gp(%p) = {%p; %p}\n",
-	        get_node_id(), _out, _int_vars_k, _u_k);
-	_out[0].init(_int_vars_k, _u_k, tnndim);
-}
-
-
-#pragma oss task out(_out[0])
-template <typename T>
-void set_val(T _in, T *_out)
-{
-	*_out = _in;
-}
-
-
 template <int tdim>
 void homogenize_conditional_task(struct data self, int nvoi,
                                  int *ell_cols, const int ell_cols_size,

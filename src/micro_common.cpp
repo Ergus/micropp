@@ -107,14 +107,18 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 
 		printf("%p %p %p\n", gp_ptr, tv_k, tu_k);
 
-		set_gp<tdim>(tv_k, tu_k, tnndim, gp_ptr);
+		#pragma oss task out(gp_ptr[0]) label(init_gp)
+		gp_ptr->init(tv_k, tu_k, tnndim);
+
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
 		material_t material_tmp = _materials[i];
         printf("material_ptr: %p\n", material_ptr);
-		set_val<material_t>(material_tmp, material_ptr);
+
+        #pragma oss task out(material_ptr[0]) label(init_material)
+        *material_ptr = material_tmp;
 
 	}
 
@@ -127,7 +131,9 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 				int *type_ptr = &elem_type[e_i];
 				int type = get_elem_type(ex, ey, ez);
 
-				set_val<int>(type, type_ptr);
+				#pragma oss task out(type_ptr[0]) label(init_type)
+				*type_ptr = type;
+
 			}
 		}
 	}
