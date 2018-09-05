@@ -26,6 +26,11 @@
 #include <cstdlib>
 #include <cmath>
 
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
 template <int dim>
 class gp_t {
 		static constexpr int nvoi = dim * (dim + 1) / 2;  // 3, 6
@@ -44,6 +49,7 @@ class gp_t {
 		double inv_max;
 
 		gp_t() = delete;
+		~gp_t()	{}
 
 		void init(double *_int_vars_k, double *_u_k, int nndim)
 		{
@@ -55,15 +61,12 @@ class gp_t {
 			u_k = _u_k;
 		}
 
-		~gp_t()
-		{}
 
 		void allocate(const int num_int_vars)
 		{
 			assert(!allocated);
 			allocated = true;
 		}
-
 
 		bool is_linear(const double *ctan_lin, const double _inv_tol,
 		               double _inv_max)
@@ -81,6 +84,32 @@ class gp_t {
 				inv_max = fabs(inv);
 
 			return (fabs(inv) < _inv_tol);
+		}
+
+		void print_stress() const
+		{
+			cout << "\t\t";
+			for(int i = 0; i < nvoi; ++i)
+				cout << setw(14) << macro_stress[i] << "\t";
+			cout << endl;
+		}
+
+		void print_strain() const
+		{
+			cout << "\t\t";
+			for(int i = 0; i < nvoi; ++i)
+				cout << setw(14) << macro_strain[i] << "\t";
+			cout << endl;
+		}
+
+		void print_ctan() const
+		{
+			for(int i = 0; i < nvoi; ++i) {
+				cout << "\t\t";
+				for(int j = 0; j < nvoi; ++j)
+					cout << setw(14) << macro_ctan[i * nvoi + j] << "\t";
+				cout << endl;
+			}
 		}
 
 		void print()

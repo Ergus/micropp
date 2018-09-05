@@ -11,7 +11,7 @@
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+k *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
@@ -50,7 +50,6 @@ data::data(const int tdim, const int _ngp, const int size[3], const int _micro_t
 	output_files_header = false;
 }
 
-#
 template<int tdim>
 micropp<tdim>::micropp(data *in, gp_t<tdim> *list) :
 	data(*in), gp_list(list), copy(true)
@@ -82,10 +81,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 
 	// Common permanent arrays
 	gp_list = (gp_t<tdim> *) rrd_malloc(ngp * sizeof(gp_t<tdim>));
-
 	material_list = (material_t *) rrd_malloc(numMaterials * sizeof(material_t));
-    printf("region: [%p,%p)\n", material_list, material_list + numMaterials);
-
 	elem_type = (int *) rrd_malloc(nelem * sizeof(int));
 
 	// Shared arrays for gp
@@ -95,7 +91,6 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	elem_stress = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 	elem_strain = (double *) rrd_malloc(nelem * nvoi * sizeof(double));
 
-	#pragma oss taskwait
 	// gp_list
 	for (int gp = 0; gp < ngp; gp++) {
 
@@ -105,21 +100,20 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		double *tu_k = &du_k[nndim *gp];
 		int tnndim = nndim;
 
-		printf("%p %p %p\n", gp_ptr, tv_k, tu_k);
-
-		#pragma oss task out(gp_ptr[0]) label(init_gp)
-		gp_ptr->init(tv_k, tu_k, tnndim);
-
+		#pragma oss task out(*gp_ptr) label(init_gp)
+		{
+			printf("init_gp i = %d Node %d/%d\n",
+			       gp, get_node_id(), get_nodes_nr());
+			gp_ptr->init(tv_k, tu_k, tnndim);
+		}
 	}
 
 	for (int i = 0; i < numMaterials; ++i) {
 		material_t *material_ptr = &material_list[i];
 		material_t material_tmp = _materials[i];
-        printf("material_ptr: %p\n", material_ptr);
 
-        #pragma oss task out(material_ptr[0]) label(init_material)
+		#pragma oss task out(*material_ptr) label(init_material)
         *material_ptr = material_tmp;
-
 	}
 
 	// Type
@@ -131,7 +125,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 				int *type_ptr = &elem_type[e_i];
 				int type = get_elem_type(ex, ey, ez);
 
-				#pragma oss task out(type_ptr[0]) label(init_type)
+				#pragma oss task out(*type_ptr) label(init_type)
 				*type_ptr = type;
 
 			}
@@ -147,8 +141,22 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
 	ell_init_cols(tdim, tdim, size, ell_cols_ptr);
 
-	#pragma oss taskwait
-	calc_ctan_lin();
+	{
+		int *ell_cols_ptr = ell_cols;
+		const int ell_cols_size_tmp = ell_cols_size;
+
+		material_t *material_ptr = material_list;
+		const int numMaterials_tmp = numMaterials;
+
+		int *elem_type_ptr = elem_type;
+		const int nelem_tmp = nelem;
+
+		#pragma oss task in(ell_cols_ptr[0; ell_cols_size_tmp]) \
+			in(material_ptr[0; numMaterials_tmp]) \
+			in(elem_type_ptr[0; nelem_tmp]) if(0) \
+			label(calc_ctan)
+		calc_ctan_lin();
+	}
 
 	ofstream file;
 
@@ -158,6 +166,8 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 	file.close();
 	file.open("micropp_int_vars_n.dat");
 	file.close();
+
+	#pragma oss taskwait
 }
 
 template <int tdim>
@@ -364,6 +374,8 @@ void micropp<tdim>::print_info() const
 	printf("micropp%d\n", dim);
 	printf("ngp %d n = [%d, %d, %d] => nn = %d\n", ngp, nx, ny, nz, nn);
 	printf("l = [%lf, %lf, %lf]; param = %lf\n", lx, ly, lz, special_param);
+	printf("ell_cols_size = %d nndim = %d num_int_vars = %d\n",
+	       ell_cols_size, nndim, num_int_vars);
 	for (int i = 0; i < numMaterials; ++i) {
 		printf("Type = %d, E = %e, nu = %e, Sy = %e, Ka = %e, plast = %d\n",
 		       material_list[i].type, material_list[i].E, material_list[i].nu,

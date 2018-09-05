@@ -30,7 +30,7 @@ void homogenize_conditional_task(struct data self_data, int nvoi,
                                  int nndim, int num_int_vars,
                                  const bool allocated)
 {
-	dprintf("Nanos cluster %d/%d \n", get_node_id(), get_nodes_nr());
+	dprintf("%s %d/%d \n", __func__, get_node_id(), get_nodes_nr());
 
 	micropp<tdim> self(&self_data, gp_ptr);
 
@@ -117,6 +117,8 @@ void homogenize_weak_task(data self, int nvoi,
                           gp_t<tdim> *gp_ptr, int nndim, int num_int_vars)
 {
 
+	dprintf("%s %d/%d \n", __func__, get_node_id(), get_nodes_nr());
+
 	if (gp_ptr->is_linear(self.ctan_lin, self.inv_tol, -1.0e10)
 	    && (!gp_ptr->allocated)) {
 
@@ -148,9 +150,6 @@ void homogenize_weak_task(data self, int nvoi,
 				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
-			{
-				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
-				gp_ptr->print();
 			homogenize_conditional_task<tdim>(self, nvoi,
 			                                  ell_cols, ell_cols_size,
 			                                  material_list, numMaterials,
@@ -159,26 +158,21 @@ void homogenize_weak_task(data self, int nvoi,
 			                                  true);
 
 
-			}
 		} else {
 
 			#pragma oss task in(ell_cols[0; ell_cols_size]) \
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
                                                                         \
-				inout(gp_ptr[0]) \
-				inout(tu_k[0; nndim]) \
-				inout(tv_k[0; num_int_vars])
-			{
-				printf("CALLER: %p (%p) ", gp_ptr, gp_ptr->u_k);
-				gp_ptr->print();
+				out(gp_ptr[0]) \
+				out(tu_k[0; nndim]) \
+				out(tv_k[0; num_int_vars])
 			homogenize_conditional_task<tdim>(self, nvoi,
 			                                  ell_cols, ell_cols_size,
 			                                  material_list, numMaterials,
 			                                  elem_type, nelem,
 			                                  gp_ptr, nndim, num_int_vars,
 			                                  false);
-			}
 		}
 	}
 }

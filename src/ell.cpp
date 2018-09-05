@@ -54,9 +54,9 @@ void ell_init_cols(const int nfield, const int dim, const int ns[3], int *cols)
 	const int nrow = nn * nfield;
 
 	if (dim == 2) {
-		for (int fi = 0; fi < nfield; ++fi) {
+		for (int yi = 0; yi < ny; ++yi) {
 			for (int xi = 0; xi < nx; ++xi) {
-				for (int yi = 0; yi < ny; ++yi) {
+				for (int fi = 0; fi < nfield; ++fi) {
 
 					const int ni = nod_index2D(xi, yi);
 					int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
@@ -81,10 +81,10 @@ void ell_init_cols(const int nfield, const int dim, const int ns[3], int *cols)
 
 	} else if (dim == 3) {
 
-		for (int fi = 0; fi < nfield; ++fi) {
-			for (int xi = 0; xi < nx; ++xi) {
-				for (int yi = 0; yi < ny; ++yi) {
-					for (int zi = 0; zi < nz; ++zi) {
+		for (int zi = 0; zi < nz; ++zi) {
+			for (int yi = 0; yi < ny; ++yi) {
+				for (int xi = 0; xi < nx; ++xi) {
+					for (int fi = 0; fi < nfield; ++fi) {
 
 						const int ni = nod_index3D(xi, yi, zi);
 						int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);

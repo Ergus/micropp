@@ -34,7 +34,7 @@
 
 static inline void *rrd_malloc(size_t size)
 {
-	dprintf("Using dmalloc\n");
+	dprintf("Using nanos6_dmalloc\n");
 	void *ret = nanos_dmalloc(size, DMALLOC_RR, 0, NULL);
 	assert(ret != NULL);
 
@@ -43,9 +43,26 @@ static inline void *rrd_malloc(size_t size)
 
 static inline void rrd_free(void *in)
 {
-	dprintf("Using dfree\n");
+	dprintf("Using nanos6_dfree\n");
 	nanos_dfree(in);
 }
+
+static inline void *rrl_malloc(size_t size)
+{
+	dprintf("Using nanos6_lmalloc\n");
+	void *ret = nanos_lmalloc(size);
+	assert(ret != NULL);
+
+	return ret;
+}
+
+
+static inline void rrl_free(void *in)
+{
+	dprintf("Using nanos6_lfree\n");
+	nanos_lfree(in);
+}
+
 
 #define get_node_id() nanos_get_node_id()
 #define get_nodes_nr() nanos_get_nodes_nr()
@@ -63,6 +80,21 @@ static inline void *rrd_malloc(size_t size)
 static inline void rrd_free(void *in)
 {
 	dprintf("Using libc_free\n");
+	free(in);
+}
+
+static inline void *rrl_malloc(size_t size)
+{
+	dprintf("Using libc_lmalloc\n");
+	void *ret = malloc(size);
+	assert(ret != NULL);
+	return ret;
+}
+
+
+static inline void rrl_free(void *in)
+{
+	dprintf("Using libc_lfree\n");
 	free(in);
 }
 

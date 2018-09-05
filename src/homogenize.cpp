@@ -1,4 +1,4 @@
-/*
+ /*
  *  This source code is part of MicroPP: a finite element library
  *  to solve microstructural problems for composite materials.
  *
@@ -27,11 +27,26 @@
 
 template <int tdim>
 void micropp<tdim>::set_macro_strain(const int gp_id,
-									 const double *macro_strain)
+                                     const double *macro_strain)
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
-	memcpy(gp_list[gp_id].macro_strain, macro_strain, nvoi * sizeof(double));
+
+	const int tnvoi = nvoi;
+
+	double *lstrain = (double *) rrl_malloc(tnvoi * sizeof(double));
+	memcpy(lstrain, macro_strain, tnvoi * sizeof(double));
+
+	double *tm_strain = gp_list[gp_id].macro_strain;
+
+	#pragma oss task out(tm_strain[0;tnvoi]) in(lstrain[0;tnvoi]) //firstprivate(macro_strain[0;tnvoi])
+	memcpy(tm_strain, lstrain, tnvoi * sizeof(double));
+
+	#pragma oss task in(gp_list[gp_id])
+	gp_list[gp_id].print_strain();
+
+	#pragma oss taskwait
+	rrl_free(lstrain);
 }
 
 
@@ -41,7 +56,16 @@ void micropp<tdim>::get_macro_stress(const int gp_id,
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
-	memcpy(macro_stress, gp_list[gp_id].macro_stress, nvoi * sizeof(double));
+
+	const int tnvoi = nvoi;
+	const double *tm_stress = gp_list[gp_id].macro_stress;
+
+	#pragma oss task in(gp_list[gp_id])
+	gp_list[gp_id].print_stress();
+
+	#pragma oss task in(tm_stress[0;tnvoi]) if(0)
+	memcpy(macro_stress, tm_stress, tnvoi * sizeof(double));
+	#pragma oss taskwait
 }
 
 
@@ -50,7 +74,16 @@ void micropp<tdim>::get_macro_ctan(const int gp_id, double *macro_ctan) const
 {
 	assert(gp_id < ngp);
 	assert(ngp > 0);
-	memcpy(macro_ctan, gp_list[gp_id].macro_ctan, nvoi * nvoi * sizeof(double));
+
+	const int tnvoi2 = nvoi * nvoi;
+	const double *tm_ctan = gp_list[gp_id].macro_ctan;
+
+	#pragma oss task in(gp_list[gp_id])
+	gp_list[gp_id].print_ctan();
+
+	#pragma oss task in(tm_ctan[0; tnvoi2]) if(0)
+	memcpy(macro_ctan, tm_ctan, tnvoi2 * sizeof(double));
+	#pragma oss taskwait
 }
 
 template <int tdim>
@@ -64,24 +97,25 @@ void micropp<tdim>::homogenize()
 		gp_t<tdim> * const gp_ptr = &gp_list[gp];
 
 		int *ell_cols_ptr = ell_cols;
-		int ell_cols_size_tmp = ell_cols_size;
+		const int ell_cols_size_tmp = ell_cols_size;
 
 		material_t *material_ptr = material_list;
-		int numMaterials_tmp = numMaterials;
+		const int numMaterials_tmp = numMaterials;
 
 		int *elem_type_ptr = elem_type;
-		int nelem_tmp = nelem;
+		const int nelem_tmp = nelem;
 
 		double *tv_k = &(dint_vars_k[num_int_vars * gp]);
 		double *tu_k = &(du_k[nndim *gp]);
-		int nndim_tmp = nndim;
-		int num_int_vars_tmp = num_int_vars;
+		const int nndim_tmp = nndim;
+		const int num_int_vars_tmp = num_int_vars;
 
-		printf("%d %p %p\n", gp, gp_ptr, gp_ptr->u_k);
+		printf("%d gp_ptr = %p tv_k = %p tu_k = %p\n",
+		       gp, gp_ptr, tv_k, tu_k);
 
-		#pragma oss task in(ell_cols_ptr[0; ell_cols_size_tmp]) \
-			in(material_ptr[0; numMaterials_tmp]) \
-			in(elem_type_ptr[0; nelem_tmp]) \
+		#pragma oss task weakin(ell_cols_ptr[0; ell_cols_size_tmp]) \
+			weakin(material_ptr[0; numMaterials_tmp]) \
+			weakin(elem_type_ptr[0; nelem_tmp]) \
 			 \
 			inout(gp_ptr[0]) \
 			weakinout(tu_k[0; nndim_tmp]) \
