@@ -51,9 +51,7 @@ typedef struct {
 
 } ell_matrix;
 
-int *ell_malloc_cols(const int nfield, const int dim, const int ns[3], int *size);
-
-void ell_init_cols(const int nfield, const int dim, const int ns[3], int *cols);
+int *ell_init_cols(const int nfield, const int dim, const int ns[3], int *size);
 
 void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
               const int ns[3], const double min_err, const int max_its);

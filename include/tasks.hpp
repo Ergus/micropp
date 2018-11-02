@@ -34,9 +34,10 @@
 
 static inline void *rrd_malloc(size_t size)
 {
-	dprintf("Using nanos6_dmalloc\n");
 	void *ret = nanos_dmalloc(size, DMALLOC_RR, 0, NULL);
 	assert(ret != NULL);
+	dprintf("Using nanos6_dmalloc [%p -> %p] size %d\n",
+	        ret, (char*)ret + size, size);
 
 	return ret;
 }
@@ -49,9 +50,10 @@ static inline void rrd_free(void *in)
 
 static inline void *rrl_malloc(size_t size)
 {
-	dprintf("Using nanos6_lmalloc\n");
 	void *ret = nanos_lmalloc(size);
 	assert(ret != NULL);
+	dprintf("Using nanos6_lmalloc [%p -> %p] size %d\n",
+	        ret, (char*)ret + size, size);
 
 	return ret;
 }
@@ -71,9 +73,11 @@ static inline void rrl_free(void *in)
 
 static inline void *rrd_malloc(size_t size)
 {
-	dprintf("Using libc malloc\n");
 	void *ret = malloc(size);
 	assert(ret != NULL);
+	dprintf("Using libc malloc [%p -> %p] size %d\n",
+	        ret, (char*)ret + size, size);
+
 	return ret;
 }
 
@@ -85,9 +89,11 @@ static inline void rrd_free(void *in)
 
 static inline void *rrl_malloc(size_t size)
 {
-	dprintf("Using libc_lmalloc\n");
 	void *ret = malloc(size);
 	assert(ret != NULL);
+	dprintf("Using libc_lmalloc [%p -> %p] size %d\n",
+	        ret, (char*)ret + size, size);
+
 	return ret;
 }
 
@@ -104,7 +110,7 @@ static inline void rrl_free(void *in)
 #endif
 
 template <int tdim>
-void homogenize_conditional_task(struct data self, int nvoi,
+void homogenize_conditional_task(struct data self, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
@@ -114,7 +120,7 @@ void homogenize_conditional_task(struct data self, int nvoi,
 
 
 template <int tdim>
-void homogenize_weak_task(data self, int nvoi,
+void homogenize_weak_task(data self, const int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,

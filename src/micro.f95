@@ -20,33 +20,19 @@ module libmicropp
 
   implicit none
 
-  private :: new_micropp3, set_macro_strain, homogenize, &
-       get_macro_stress, get_macro_ctan, update_vars, &
-       get_nl_flag, write_info_files, output
-
-  public :: micropp3, free
+  public :: new_micropp3, set_macro_strain3, homogenize3, &
+       get_macro_stress3, get_macro_ctan3, update_vars3, &
+       get_nl_flag3, write_info_files3, output3, micropp3, free3
 
   type :: micropp3
      private
      integer(8) :: ptr ! pointer
-   contains
-     procedure :: set_macro_strain, homogenize, &
-          get_macro_stress, get_macro_ctan, update_vars, &
-          get_nl_flag, write_info_files, output, print_info
   end type micropp3
-
-  interface micropp3
-     procedure new_micropp3
-  end interface micropp3
-
-  integer(8) :: init3
-  external init3
 
 contains
 
   !------------------------------------------------------------
   ! Constructors
-
   function new_micropp3(ngp, size, micro_type, micro_params, params)
     implicit none
     type(micropp3) :: new_micropp3
@@ -63,7 +49,7 @@ contains
   subroutine free(this)
     class(micropp3) :: this
     call free3(this%ptr)
-  end subroutine free
+  end subroutine free3
 
   !------------------------------------------------------------
   ! Main Calculation

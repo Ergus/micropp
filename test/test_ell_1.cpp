@@ -27,6 +27,7 @@
 #include <cassert>
 
 #include "ell.hpp"
+#include "tasks.hpp"
 
 using namespace std;
 
@@ -51,8 +52,7 @@ int main (int argc, char *argv[])
 	int size;
 
 	ell_matrix A1;
-	int *cols = ell_malloc_cols( nfield,  dim,  ns, &size);
-	ell_init_cols(nfield, dim, ns, cols);
+	int *cols = ell_init_cols(nfield, dim, ns, &size);
 	ell_init(&A1, cols, nfield, dim, ns, 1.0e-5, 50);
 
 	cout << "A1.nrow =\t" << A1.nrow << endl;
@@ -115,7 +115,7 @@ int main (int argc, char *argv[])
 	assert (cg_its == 1);
 
 	ell_free(&A1);
-	free(cols);
+	rrd_free(cols);
 
 	return 0;
 }

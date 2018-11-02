@@ -14,7 +14,6 @@ build*
 micropp
 ell_solvers
 libmicropp.a
-tuvieja
 pics
 plot_output.sh
 compile_opt.sh
@@ -26,7 +25,10 @@ extract_data.py
 !scripts/extract_data.py
 compile_commands.json
 scripts/output*
-
+.dumbjump
+GPATH
+GRTAGS
+GTAGS
 \#*
 .#*
 *.swp

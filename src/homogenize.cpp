@@ -42,9 +42,6 @@ void micropp<tdim>::set_macro_strain(const int gp_id,
 	#pragma oss task out(tm_strain[0;tnvoi]) in(lstrain[0;tnvoi]) //firstprivate(macro_strain[0;tnvoi])
 	memcpy(tm_strain, lstrain, tnvoi * sizeof(double));
 
-	#pragma oss task in(gp_list[gp_id])
-	gp_list[gp_id].print_strain();
-
 	#pragma oss taskwait
 	rrl_free(lstrain);
 }
@@ -60,12 +57,18 @@ void micropp<tdim>::get_macro_stress(const int gp_id,
 	const int tnvoi = nvoi;
 	const double *tm_stress = gp_list[gp_id].macro_stress;
 
-	#pragma oss task in(gp_list[gp_id])
-	gp_list[gp_id].print_stress();
+	double *lstress = (double *) rrl_malloc(tnvoi * sizeof(double));
 
-	#pragma oss task in(tm_stress[0;tnvoi]) if(0)
-	memcpy(macro_stress, tm_stress, tnvoi * sizeof(double));
+	#pragma oss task out(lstress[0;tnvoi]) in(tm_stress[0;tnvoi])
+	{
+		memcpy(lstress, tm_stress, tnvoi * sizeof(double));
+		printf("tm_stress[0] = %lf (%p)\n", tm_stress[0], tm_stress);
+	}
 	#pragma oss taskwait
+
+	memcpy(macro_stress, lstress, tnvoi * sizeof(double));
+
+	rrl_free(lstress);
 }
 
 
@@ -78,10 +81,7 @@ void micropp<tdim>::get_macro_ctan(const int gp_id, double *macro_ctan) const
 	const int tnvoi2 = nvoi * nvoi;
 	const double *tm_ctan = gp_list[gp_id].macro_ctan;
 
-	#pragma oss task in(gp_list[gp_id])
-	gp_list[gp_id].print_ctan();
-
-	#pragma oss task in(tm_ctan[0; tnvoi2]) if(0)
+	#pragma oss task in(tm_ctan[0; tnvoi2])
 	memcpy(macro_ctan, tm_ctan, tnvoi2 * sizeof(double));
 	#pragma oss taskwait
 }
@@ -94,7 +94,7 @@ void micropp<tdim>::homogenize()
 	const int tnvoi = nvoi;
 
 	for (int gp = 0; gp < ngp; ++gp) {
-		gp_t<tdim> * const gp_ptr = &gp_list[gp];
+		gp_t<tdim> *gp_ptr = &gp_list[gp];
 
 		int *ell_cols_ptr = ell_cols;
 		const int ell_cols_size_tmp = ell_cols_size;
@@ -110,9 +110,6 @@ void micropp<tdim>::homogenize()
 		const int nndim_tmp = nndim;
 		const int num_int_vars_tmp = num_int_vars;
 
-		printf("%d gp_ptr = %p tv_k = %p tu_k = %p\n",
-		       gp, gp_ptr, tv_k, tu_k);
-
 		#pragma oss task weakin(ell_cols_ptr[0; ell_cols_size_tmp]) \
 			weakin(material_ptr[0; numMaterials_tmp]) \
 			weakin(elem_type_ptr[0; nelem_tmp]) \
@@ -120,11 +117,17 @@ void micropp<tdim>::homogenize()
 			inout(gp_ptr[0]) \
 			weakinout(tu_k[0; nndim_tmp]) \
 			weakinout(tv_k[0; num_int_vars_tmp])
-		homogenize_weak_task(*this, tnvoi,
-		                     ell_cols_ptr, ell_cols_size_tmp,
-		                     material_ptr, numMaterials_tmp,
-		                     elem_type_ptr, nelem_tmp,
-		                     gp_ptr, nndim_tmp, num_int_vars_tmp);
+		{
+			//printf("%d gp_ptr = %p tv_k = %p tu_k = %p tm_stress[0] = %lf\n",
+			//       gp, gp_ptr, tv_k, tu_k, tm_stress[0]);
+
+			homogenize_weak_task(*this, tnvoi,
+			                     ell_cols_ptr, ell_cols_size_tmp,
+			                     material_ptr, numMaterials_tmp,
+			                     elem_type_ptr, nelem_tmp,
+			                     gp_ptr, nndim_tmp, num_int_vars_tmp);
+			
+		}
 	}
 	#pragma oss taskwait
 }

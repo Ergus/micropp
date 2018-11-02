@@ -26,6 +26,7 @@
 #include <cassert>
 
 #include "ell.hpp"
+#include "tasks.hpp"
 
 using namespace std;
 
@@ -51,8 +52,7 @@ int main (int argc, char *argv[])
 	int size;
 
 	ell_matrix A1;
-	int *cols = ell_malloc_cols(nfield,  dim,  ns, &size);
-	ell_init_cols(nfield, dim, ns, cols);
+	int *cols =	ell_init_cols(nfield, dim, ns, &size);
 
 	double cg_err;
 
@@ -62,9 +62,9 @@ int main (int argc, char *argv[])
 		cout << "A1.nrow =\t" << A1.nrow << endl;
 		cout << "A1.ncol =\t" << A1.ncol << endl;
 		cout << "A1.nnz =\t" << A1.nnz << endl;
-		assert( A1.nrow == (nx * ny) && 
-				A1.ncol == (nx * ny) && 
-				A1.nnz == nfield * 9 );
+		assert( A1.nrow == (nx * ny) &&
+		        A1.ncol == (nx * ny) &&
+		        A1.nnz == nfield * 9 );
 
 		const double Ae[4 * 4] = {
 			10.6667,   -2.6667,   -5.3333,   -2.6667,
@@ -106,7 +106,7 @@ int main (int argc, char *argv[])
 	}
 
 	ell_free(&A1);
-	free(cols);
+	rrd_free(cols);
 
 	return 0;
 }

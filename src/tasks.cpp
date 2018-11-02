@@ -22,7 +22,7 @@
 #include "tasks.hpp"
 
 template <int tdim>
-void homogenize_conditional_task(struct data self_data, int nvoi,
+void homogenize_conditional_task(struct data self_data, const int nvoi,
                                  int *ell_cols, const int ell_cols_size,
                                  const material_t *material_list, const int numMaterials,
                                  int *elem_type, int nelem,
@@ -146,7 +146,7 @@ void homogenize_weak_task(data self, int nvoi,
 			#pragma oss task in(ell_cols[0; ell_cols_size]) \
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
-                                                                        \
+				 \
 				inout(gp_ptr[0]) \
 				inout(tu_k[0; nndim]) \
 				inout(tv_k[0; num_int_vars])
@@ -163,8 +163,8 @@ void homogenize_weak_task(data self, int nvoi,
 			#pragma oss task in(ell_cols[0; ell_cols_size]) \
 				in(material_list[0; numMaterials]) \
 				in(elem_type[0; nelem]) \
-                                                                        \
-				out(gp_ptr[0]) \
+				 \
+				inout(gp_ptr[0]) \
 				out(tu_k[0; nndim]) \
 				out(tv_k[0; num_int_vars])
 			homogenize_conditional_task<tdim>(self, nvoi,
@@ -176,10 +176,6 @@ void homogenize_weak_task(data self, int nvoi,
 		}
 	}
 }
-
-// Explicit instantiation
-template class micropp<2>;
-template class micropp<3>;
 
 template
 void homogenize_conditional_task<2>(struct data self, const int nvoi,
@@ -202,14 +198,14 @@ void homogenize_conditional_task<3>(struct data self, const int nvoi,
 
 
 template
-void homogenize_weak_task<2>(data self, int nvoi,
+void homogenize_weak_task<2>(data self, const int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,
                           gp_t<2> *gp_ptr, int nndim, int num_int_vars);
 
 template
-void homogenize_weak_task<3>(data self, int nvoi,
+void homogenize_weak_task<3>(data self, const int nvoi,
                           int *ell_cols, const int ell_cols_size,
                           const material_t *material_list, const int numMaterials,
                           int *elem_type, int nelem,

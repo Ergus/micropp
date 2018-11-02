@@ -15,7 +15,7 @@ k *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
-k *  You should have received a copy of the GNU General Public License
+ *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -45,7 +45,7 @@ data::data(const int tdim, const int _ngp, const int size[3], const int _micro_t
 	vol_tot((tdim == 3) ? lx * ly * lz : lx * ly),
 	ivol(1.0 / (wg * mypow(2, tdim))),
 	micro_type(_micro_type), num_int_vars(nelem * 8 * NUM_VAR_GP),
-	ell_cols_size(mypow(3, tdim) * tdim * nn * tdim)
+	ell_cols_size(0)
 {
 	output_files_header = false;
 }
@@ -100,9 +100,9 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		double *tu_k = &du_k[nndim *gp];
 		int tnndim = nndim;
 
-		#pragma oss task out(*gp_ptr) label(init_gp)
+		#pragma oss task out(gp_ptr[0]) label(init_gp)
 		{
-			printf("init_gp i = %d Node %d/%d\n",
+			dprintf("init_gp i = %d Node %d/%d\n",
 			       gp, get_node_id(), get_nodes_nr());
 			gp_ptr->init(tv_k, tu_k, tnndim);
 		}
@@ -113,7 +113,11 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 		material_t material_tmp = _materials[i];
 
 		#pragma oss task out(*material_ptr) label(init_material)
-        *material_ptr = material_tmp;
+		{
+			dprintf("material[%d] :  Node %d/%d\n",
+			        i, get_node_id(), get_nodes_nr());
+			*material_ptr = material_tmp;
+		}
 	}
 
 	// Type
@@ -127,19 +131,12 @@ micropp<tdim>::micropp(const int _ngp, const int size[3],
 
 				#pragma oss task out(*type_ptr) label(init_type)
 				*type_ptr = type;
-
 			}
 		}
 	}
 
-	ell_cols = (int *) ell_malloc_cols(dim, dim, size, &ell_cols_size);
-
-	int *ell_cols_ptr = ell_cols;
-	int ell_cols_size_tmp = ell_cols_size;
-
-	// This needs to be released manually!!
-	#pragma oss task out(ell_cols_ptr[0; ell_cols_size_tmp]) label(init_ell_cols)
-	ell_init_cols(tdim, tdim, size, ell_cols_ptr);
+	// ell_cols needs to be released manually!! it is a task
+	ell_cols = ell_init_cols(tdim, tdim, size, &ell_cols_size);
 
 	{
 		int *ell_cols_ptr = ell_cols;

@@ -22,22 +22,24 @@
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <numeric>
+
+#include <cstdio>
+#include <cmath>
+#include <ctime>
+#include <cstring>
+#include <cassert>
+
+
 // Debug print macro.
 #ifdef NDEBUG
 	#define dprintf(...)
 #else
 	#define dprintf(...) fprintf(stderr, __VA_ARGS__)
 #endif
-
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <numeric>
-
-#include <cmath>
-#include <ctime>
-#include <cstring>
-#include <cassert>
 
 using namespace std;
 
@@ -75,4 +77,31 @@ void mvp(const double m[tdim][tdim], const double x[tdim], double y[tdim])
 	}
 }
 
+inline void distribute(int total, int nodes, int *start, int *nelems)
+{
+	assert (nodes > 0);
+	const int frac = total / nodes;
+	const int mod = total - frac * nodes;
+	int cum = 0;
+	for(int i = 0; i < mod; ++i) {
+		nelems[i] = frac + 1;
+		start[i] = cum;
+		cum += frac + 1;
+	}
+
+	for(int i = mod; i < nodes; ++i) {
+		nelems[i] = frac;
+		start[i] = cum;
+		cum += frac;
+	}
+}
+
+template <typename T>
+void printarray(const int size, T array)
+{
+	cerr << "[ ";
+	for (int i = 0; i < size; ++i)
+		cerr << array[i] << " ";
+	cerr << "]\n";
+}
 #endif //UTIL_HPP

@@ -29,105 +29,144 @@
 
 using namespace std;
 
-
-int *ell_malloc_cols(const int nfield, const int dim, const int ns[3], int *size)
+int *ell_init_cols(const int nfield, const int dim, const int ns[3],
+                   int *ell_cols_size)
 {
-	const int nn = (dim == 2) ? ns[0] * ns[1] : ns[0] * ns[1] * ns[2];
-	const int num_nodes = (dim == 2) ? 9 : 27;
-	const int nnz = num_nodes * nfield;
-	const int nrow = nn * nfield;
 
-	*size = nnz * nrow;
-
-	return (int *) rrd_malloc((*size) * sizeof(int));
-}
-
-void ell_init_cols(const int nfield, const int dim, const int ns[3], int *cols)
-{
 	const int nx = ns[0];
 	const int ny = ns[1];
 	const int nz = ns[2];
 	const int nn = (dim == 2) ? nx * ny : nx * ny * nz;
-	const int nxny = nx * ny;
 	const int num_nodes = (dim == 2) ? 9 : 27;
 	const int nnz = num_nodes * nfield;
 	const int nrow = nn * nfield;
 
-	if (dim == 2) {
-		for (int yi = 0; yi < ny; ++yi) {
-			for (int xi = 0; xi < nx; ++xi) {
-				for (int fi = 0; fi < nfield; ++fi) {
+	const int size = num_nodes * nfield * nn * nfield;
+	*ell_cols_size = size;
 
-					const int ni = nod_index2D(xi, yi);
-					int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
+	int *cols = (int *) rrd_malloc((size) * sizeof(int));
 
-					int ix[] = {
-						(yi == 0 || xi == 0)           ? 0 : ni - nx - 1,
-						(yi == 0)                      ? 0 : ni - nx,
-						(yi == 0 || xi == nx - 1)      ? 0 : ni - nx + 1,
-						(xi == 0)                      ? 0 : ni - 1,
-						ni,
-						(xi == nx - 1)                 ? 0 : ni + 1,
-						(xi == 0 || yi == ny - 1)      ? 0 : ni + nx - 1,
-						(yi == ny - 1)                 ? 0 : ni + nx,
-						(xi == nx - 1 || yi == ny - 1) ? 0 : ni + nx + 1 };
+	#pragma oss task weakout(cols[0; size]) label(init_ell_cols_weak)
+	{
+		const int nodes = get_nodes_nr();
+		int l_sizes[nodes];
+		int l_start[nodes];
 
-					for (int n = 0; n < num_nodes; ++n)
-						for (int fj = 0; fj < nfield; ++fj)
-							cols_ptr[n * nfield + fj] = ix[n] * nfield + fj;
+		if (dim == 2) {
+			distribute(ny, nodes, l_start, l_sizes);
+			const int slice = num_nodes * nfield * nfield * nx;
+
+			#ifndef NDEBUG
+			printarray(nodes, l_sizes);
+			printarray(nodes, l_start);
+			#endif
+
+			for (int t = 0; t < nodes; ++t)	{
+				const int size = l_sizes[t];
+				const int start = l_start[t];
+
+				#pragma oss task out(cols[slice * start; slice * size]) label(init_ell_cols)
+				{
+					for (int yi = start; yi < start + size; ++yi) {
+						for (int xi = 0; xi < nx; ++xi) {
+							for (int fi = 0; fi < nfield; ++fi) {
+
+								const int ni = nod_index2D(xi, yi);
+								int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
+
+								int ix[] = {
+									(yi == 0 || xi == 0)           ? 0 : ni - nx - 1,
+									(yi == 0)                      ? 0 : ni - nx,
+									(yi == 0 || xi == nx - 1)      ? 0 : ni - nx + 1,
+									(xi == 0)                      ? 0 : ni - 1,
+									ni,
+									(xi == nx - 1)                 ? 0 : ni + 1,
+									(xi == 0 || yi == ny - 1)      ? 0 : ni + nx - 1,
+									(yi == ny - 1)                 ? 0 : ni + nx,
+									(xi == nx - 1 || yi == ny - 1) ? 0 : ni + nx + 1 };
+
+								for (int n = 0; n < num_nodes; ++n)
+									for (int fj = 0; fj < nfield; ++fj)
+										cols_ptr[n * nfield + fj] = ix[n] * nfield + fj;
+							}
+						}
+					}
 				}
 			}
-		}
 
-	} else if (dim == 3) {
+		} else if (dim == 3) {
 
-		for (int zi = 0; zi < nz; ++zi) {
-			for (int yi = 0; yi < ny; ++yi) {
-				for (int xi = 0; xi < nx; ++xi) {
-					for (int fi = 0; fi < nfield; ++fi) {
+			const int nxny = nx * ny;
 
-						const int ni = nod_index3D(xi, yi, zi);
-						int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
+			distribute(nz, nodes, l_start, l_sizes);
+			const int slice = num_nodes * nfield * nfield * nx * ny;
 
-						int ix[] = {
-							(zi == 0 || yi == 0 || xi == 0)                ? 0 : ni - nxny - nx - 1,
-							(zi == 0 || yi == 0)                           ? 0 : ni - nxny - nx,
-							(zi == 0 || yi == 0 || xi == nx - 1)           ? 0 : ni - nxny - nx + 1,
-							(zi == 0 || xi == 0)                           ? 0 : ni - nxny - 1,
-							(zi == 0)                                      ? 0 : ni - nxny,
-							(zi == 0 || xi == nx - 1)                      ? 0 : ni - nxny + 1,
-							(zi == 0 || yi == ny - 1 || xi == 0)           ? 0 : ni - nxny + nx - 1,
-							(zi == 0 || yi == ny - 1)                      ? 0 : ni - nxny + nx,
-							(zi == 0 || yi == ny - 1 || xi == nx - 1)      ? 0 : ni - nxny + nx + 1,
+			#ifndef NDEBUG
+			printarray(nodes, l_sizes);
+			printarray(nodes, l_start);
+			#endif
 
-							(yi == 0 || xi == 0)                           ? 0 : ni - nx - 1,
-							(yi == 0)                                      ? 0 : ni - nx,
-							(yi == 0 || xi == nx - 1)                      ? 0 : ni - nx + 1,
-							(xi == 0)                                      ? 0 : ni - 1,
-							ni,
-							(xi == nx - 1)                                 ? 0 : ni + 1,
-							(yi == ny - 1 || xi == 0)                      ? 0 : ni + nx - 1,
-							(yi == ny - 1)                                 ? 0 : ni + nx,
-							(yi == ny - 1 || xi == nx - 1)                 ? 0 : ni + nx + 1,
+			for (int t = 0; t < nodes; ++t)	{
+				const int size = l_sizes[t];
+				const int start = l_start[t];
 
-							(zi == nz - 1 || yi == 0 || xi == 0)           ? 0 : ni + nxny - nx - 1,
-							(zi == nz - 1 || yi == 0)                      ? 0 : ni + nxny - nx,
-							(zi == nz - 1 || yi == 0 || xi == nx - 1)      ? 0 : ni + nxny - nx + 1,
-							(zi == nz - 1 || xi == 0)                      ? 0 : ni + nxny - 1,
-							(zi == nz - 1)                                 ? 0 : ni + nxny,
-							(zi == nz - 1 || xi == nx - 1)                 ? 0 : ni + nxny + 1,
-							(zi == nz - 1 || yi == ny - 1 || xi == 0)      ? 0 : ni + nxny + nx - 1,
-							(zi == nz - 1 || yi == ny - 1)                 ? 0 : ni + nxny + nx,
-							(zi == nz - 1 || yi == ny - 1 || xi == nx - 1) ? 0 : ni + nxny + nx + 1 };
+				#pragma oss task out(cols[slice * start; slice * size])
+				{
+					dprintf("col_init[%d] in node: %d\n", t, get_node_id());
 
-						for (int n = 0; n < num_nodes; ++n)
-							for (int fj = 0; fj < nfield; ++fj)
-								cols_ptr[n * nfield + fj] = ix[n] * nfield + fj;
+					for (int zi = start; zi < start + size; ++zi) {
+						for (int yi = 0; yi < ny; ++yi) {
+							for (int xi = 0; xi < nx; ++xi) {
+								for (int fi = 0; fi < nfield; ++fi) {
+
+									const int ni = nod_index3D(xi, yi, zi);
+									int * const cols_ptr = &(cols[ni * nfield * nnz + fi * nnz]);
+
+									int ix[] = {
+										(zi == 0 || yi == 0 || xi == 0)                ? 0 : ni - nxny - nx - 1,
+										(zi == 0 || yi == 0)                           ? 0 : ni - nxny - nx,
+										(zi == 0 || yi == 0 || xi == nx - 1)           ? 0 : ni - nxny - nx + 1,
+										(zi == 0 || xi == 0)                           ? 0 : ni - nxny - 1,
+										(zi == 0)                                      ? 0 : ni - nxny,
+										(zi == 0 || xi == nx - 1)                      ? 0 : ni - nxny + 1,
+										(zi == 0 || yi == ny - 1 || xi == 0)           ? 0 : ni - nxny + nx - 1,
+										(zi == 0 || yi == ny - 1)                      ? 0 : ni - nxny + nx,
+										(zi == 0 || yi == ny - 1 || xi == nx - 1)      ? 0 : ni - nxny + nx + 1,
+
+										(yi == 0 || xi == 0)                           ? 0 : ni - nx - 1,
+										(yi == 0)                                      ? 0 : ni - nx,
+										(yi == 0 || xi == nx - 1)                      ? 0 : ni - nx + 1,
+										(xi == 0)                                      ? 0 : ni - 1,
+										ni,
+										(xi == nx - 1)                                 ? 0 : ni + 1,
+										(yi == ny - 1 || xi == 0)                      ? 0 : ni + nx - 1,
+										(yi == ny - 1)                                 ? 0 : ni + nx,
+										(yi == ny - 1 || xi == nx - 1)                 ? 0 : ni + nx + 1,
+
+										(zi == nz - 1 || yi == 0 || xi == 0)           ? 0 : ni + nxny - nx - 1,
+										(zi == nz - 1 || yi == 0)                      ? 0 : ni + nxny - nx,
+										(zi == nz - 1 || yi == 0 || xi == nx - 1)      ? 0 : ni + nxny - nx + 1,
+										(zi == nz - 1 || xi == 0)                      ? 0 : ni + nxny - 1,
+										(zi == nz - 1)                                 ? 0 : ni + nxny,
+										(zi == nz - 1 || xi == nx - 1)                 ? 0 : ni + nxny + 1,
+										(zi == nz - 1 || yi == ny - 1 || xi == 0)      ? 0 : ni + nxny + nx - 1,
+										(zi == nz - 1 || yi == ny - 1)                 ? 0 : ni + nxny + nx,
+										(zi == nz - 1 || yi == ny - 1 || xi == nx - 1) ? 0 : ni + nxny + nx + 1 };
+
+									for (int n = 0; n < num_nodes; ++n)
+										for (int fj = 0; fj < nfield; ++fj)
+											cols_ptr[n * nfield + fj] = ix[n] * nfield + fj;
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	}
+	#pragma oss taskwait
+
+	return cols;
 }
 
 void ell_init(ell_matrix *m, int *cols, const int nfield, const int dim,
