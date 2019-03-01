@@ -22,6 +22,9 @@
 #ifndef MICRO_HPP
 #define MICRO_HPP
 
+#ifdef __cplusplus
+
+
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -31,6 +34,8 @@
 #include <cassert>
 #include <cstring>
 #include <ctime>
+
+#endif
 
 #include "util.hpp"
 #include "ell.hpp"
@@ -78,9 +83,7 @@ enum {
 	FULL
 };
 
-
 using namespace std;
-
 
 template <int tdim>
 class micropp {

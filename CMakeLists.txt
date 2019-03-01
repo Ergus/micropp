@@ -65,8 +65,8 @@ endif()
 include_directories(include ${CMAKE_BINARY_DIR})
 
 # wildcard all the sources in src
-#file(GLOB SOURCESLIB src/*.cpp src/*.f95)
-file(GLOB SOURCESLIB src/*.cpp)
+file(GLOB SOURCESLIB src/*.c src/*.cpp src/*.f95)
+#file(GLOB SOURCESLIB src/*.cpp)
 
 add_library(micropp ${SOURCESLIB})
 

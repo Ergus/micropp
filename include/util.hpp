@@ -29,10 +29,14 @@
 #define dbprintf(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
+#ifdef __cplusplus
+
 #include <iostream>
 #include <vector>
 #include <fstream>
 #include <numeric>
+
+#endif
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -139,7 +143,7 @@ inline void distribute(int total, int nodes, int *start, int *nelems)
 }
 
 template <typename T>
-void printarray(const int size, T array)
+void printarray(const int size, T *array)
 {
 	cerr << "[ ";
 	for (int i = 0; i < size; ++i)

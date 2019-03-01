@@ -20,8 +20,16 @@
  */
 
 #include "micro.hpp"
-#include "tasks.hpp"
+
+#include "util.hpp"
+#include "ell.hpp"
+#include "material.hpp"
+#include "instrument.hpp"
+#include "newton.hpp"
+
 #include "gp.hpp"
+#include "tasks.hpp"
+
 
 template<int tdim>
 void* micropp<tdim>::operator new(std::size_t sz)
@@ -155,7 +163,7 @@ micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
 		int *tpelem_type = elem_type;
 		const int tnelem = nelem;
 
-		#pragma oss task in(tpell_cols[0; tell_cols_size])	\
+		#pragma oss task in(tpell_cols[0; tell_cols_size]) \
 			in(this[0])					\
 			in(tpmaterial[0; tnumMaterials])		\
 			in(tpelem_type[0; tnelem])			\
