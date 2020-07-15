@@ -56,8 +56,8 @@ micropp<tdim>::micropp(const micropp<tdim> &in)
 
 template<int tdim>
 micropp<tdim>::micropp(const int _ngp, const int size[3], const int _micro_type,
-		       const double _micro_params[4],
-		       const material_t *_materials, int _coupling):
+                       const double _micro_params[4],
+                       const material_t *_materials, int _coupling):
 	/*
 	 * The <_ctan_lin> option is intended for cases that we don't want to
 	 * calculate the ctan_lin because of it computational cost. For example,
@@ -212,22 +212,24 @@ micropp<tdim>::~micropp()
 
 	INST_DESTRUCT;
 
-	rrd_free(ctan_lin);
-	rrd_free(ell_cols);
+	const int tnvoi2 = nvoi * nvoi;
 
-	rrd_free(elem_strain);
-	rrd_free(elem_stress);
+	rrd_free(ctan_lin, tnvoi2 * sizeof(double));
+	rrd_free(ell_cols, ell_cols_size * sizeof(int));
 
-	rrd_free(elem_type);
-	rrd_free(material_list);
+	rrd_free(elem_strain, nelem * nvoi * sizeof(double));
+	rrd_free(elem_stress, nelem * nvoi * sizeof(double));
 
-	rrd_free(du_k);
-	rrd_free(du_n);
+	rrd_free(elem_type, nelem * sizeof(int));
+	rrd_free(material_list, numMaterials * sizeof(material_t));
 
-	rrd_free(dint_vars_k);
-	rrd_free(dint_vars_n);
+	rrd_free(du_k, ngp * nndim * sizeof(double));
+	rrd_free(du_n, ngp * nndim * sizeof(double));
 
-	rrd_free(gp_list);
+	rrd_free(dint_vars_k, ngp * num_int_vars * sizeof(double));
+	rrd_free(dint_vars_n, ngp * num_int_vars * sizeof(double));
+
+	rrd_free(gp_list, ngp * sizeof(gp_t<tdim>));
 }
 
 

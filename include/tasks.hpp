@@ -43,10 +43,10 @@ static inline void *rrd_malloc(size_t size)
 	return ret;
 }
 
-static inline void rrd_free(void *in)
+static inline void rrd_free(void *in, size_t size)
 {
 	dbprintf("Using nanos6_dfree(%p)\n", in);
-	nanos6_dfree(in);
+	nanos6_dfree(in, size);
 }
 
 static inline void *rrl_malloc(size_t size)
@@ -82,7 +82,7 @@ static inline void rrl_free(void *in)
 
 
 #define get_node_id() nanos6_get_cluster_node_id()
-#define get_nodes_nr() nanos6_get_cluster_nodes()
+#define get_nodes_nr() nanos6_get_num_cluster_nodes()
 
 #else
 

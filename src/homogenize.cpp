@@ -123,10 +123,10 @@ void micropp<tdim>::homogenize()
 							    tpell_cols, tell_cols_size,
 							    tpmaterial, tnumMaterials,
 							    tpelem_type, tnelem,
-							    gp_ptr, nndim, tnum_int_vars);
+							    gp_ptr, tnndim, tnum_int_vars);
 			} else {
 				#pragma oss task in(this[0])		\
-					in(tpell_cols[0; ell_cols_size]) \
+					in(tpell_cols[0; tell_cols_size]) \
 					in(tpmaterial[0; tnumMaterials]) \
 					in(tpelem_type[0; tnelem])	\
 									\
@@ -137,7 +137,7 @@ void micropp<tdim>::homogenize()
 							    tpell_cols, tell_cols_size,
 							    tpmaterial, tnumMaterials,
 							    tpelem_type, tnelem,
-							    gp_ptr, nndim, tnum_int_vars);
+							    gp_ptr, tnndim, tnum_int_vars);
 			}
 		}
 	}
