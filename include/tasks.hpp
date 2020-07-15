@@ -35,10 +35,10 @@
 
 static inline void *rrd_malloc(size_t size)
 {
-	void *ret = nanos6_dmalloc(size);
+	void *ret = nanos6_dmalloc(size, nanos6_equpart_distribution, 1, nullptr);
 	assert(ret != NULL);
 	dbprintf("Using nanos6_dmalloc [%p -> %p] size %d\n",
-		 ret, (char*)ret + size, size);
+	         ret, (char*)ret + size, size);
 
 	return ret;
 }
@@ -66,7 +66,7 @@ static inline void *rrl_calloc(size_t nmemb, size_t size)
 	void *ret = nanos6_lmalloc(bytes);
 	assert(ret != NULL);
 	dbprintf("Using nanos6_lmalloc [%p -> %p] size %d\n",
-		 ret, (char*)ret + size, size);
+	         ret, (char*)ret + size, size);
 
 	memset(ret, 0, bytes);
 
@@ -91,7 +91,7 @@ static inline void *rrd_malloc(size_t size)
 	void *ret = malloc(size);
 	assert(ret != NULL);
 	dbprintf("Using libc malloc [%p -> %p] size %d\n",
-		 ret, (char*)ret + size, size);
+	         ret, (char*)ret + size, size);
 
 	return ret;
 }
@@ -107,7 +107,7 @@ static inline void *rrl_malloc(size_t size)
 	void *ret = malloc(size);
 	assert(ret != NULL);
 	dbprintf("Using libc_lmalloc [%p -> %p] size %d\n",
-		 ret, (char*)ret + size, size);
+	         ret, (char*)ret + size, size);
 
 	return ret;
 }
@@ -117,7 +117,7 @@ static inline void *rrl_calloc(size_t nmemb, size_t size)
 	void *ret = calloc(nmemb, size);
 	assert(ret != NULL);
 	dbprintf("Using libc_lcalloc [%p -> %p] size %d\n",
-		 ret, (char*)ret + size, size);
+	         ret, (char*)ret + size, size);
 
 	return ret;
 }
