@@ -1,7 +1,6 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-
 project(MicroPP VERSION 0.1 LANGUAGES C CXX Fortran)
 
 if (NANOS6)
@@ -17,8 +16,9 @@ if (NANOS6)
     set(CMAKE_C_COMPILER ${MCC} CACHE INTERNAL "" FORCE)
 
     add_definitions("--ompss-2 -k -DNANOS6")
-    SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} --ompss-2 -k -DNANOS6")
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} --ompss-2 -k -DNANOS6")
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} --ompss-2 -k -DNANOS6")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} --ompss-2 -k -DNANOS6")
+    set(CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} --ompss-2 -k -DNANOS6")
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --ompss-2")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --ompss-2")
@@ -32,10 +32,10 @@ project(MicroPP VERSION 0.1 LANGUAGES C CXX Fortran)
 # Use C++11
 if (CMAKE_VERSION VERSION_LESS "3.1")
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
   endif ()
 else ()
-  set (CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 11)
 endif ()
 
 option(TIMER "Enable time benchmarks instrumentation" OFF)

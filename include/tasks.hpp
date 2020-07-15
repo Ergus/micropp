@@ -96,7 +96,7 @@ static inline void *rrd_malloc(size_t size)
 	return ret;
 }
 
-static inline void rrd_free(void *in)
+static inline void rrd_free(void *in, size_t)
 {
 	dbprintf("Using libc_free(%p)\n", in);
 	free(in);
